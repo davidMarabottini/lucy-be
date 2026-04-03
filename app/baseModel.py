@@ -1,8 +1,4 @@
 from sqlalchemy import inspect
-from flask_sqlalchemy import SQLAlchemy
-
-class BaseModel:
-  from sqlalchemy import inspect
 
 class BaseModel:
     def to_dict(self, seen_ids=None):
