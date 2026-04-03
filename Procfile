@@ -1,0 +1,1 @@
+web: gunicorn -w 4 "run:app" --bind 0.0.0.0:$PORT --log-file -

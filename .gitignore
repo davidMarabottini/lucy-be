@@ -1,0 +1,68 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (raw / large datasets)
+dati/
+data/
+datasets/
+
+# Model artifacts (binary artifacts should not be committed)
+# models/**/*.joblib
+models/**/*.pkl
+models/**/*.onnx
+models/**/*.bin
+
+# Model metadata / large exports (optional)
+models/**/artifacts/
+models/**/exports/
+
+# Environment and secrets
+.env
+.env.*
+secrets.json
+*.pem
+*.key
+
+# Logs and runtime files
+logs/
+*.log
+
+# Editor / OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Testing / build artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+*.whl
+
+# Misc caches
+.cache/
+
+# Database fisico e istanza locale
+# instance/
+*.db
+*.sqlite3
