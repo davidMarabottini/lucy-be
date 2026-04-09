@@ -5,6 +5,7 @@ ENV/
 env/
 env.bak/
 venv.bak/
+static/
 
 # Python bytecode / cache
 __pycache__/
@@ -66,3 +67,5 @@ build/
 # instance/
 *.db
 *.sqlite3
+openapi-lrp/
+*.spec

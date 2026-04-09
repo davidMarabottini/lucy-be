@@ -1,10 +1,12 @@
+from app.auth.decorators import paginated_response
 from ..models import Sector, db
 
 class SectorService:
     @staticmethod
+    @paginated_response
     def get_all():
         """Recupera tutti i settori (es. Pulizie, Portierato, Disinfestazione)"""
-        return Sector.query.all()
+        return Sector.query
 
     @staticmethod
     def get_by_id(sector_id):

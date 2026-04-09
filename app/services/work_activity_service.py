@@ -1,9 +1,12 @@
+from app.auth.decorators import paginated_response
+
 from ..models import WorkActivity, db
 
 class WorkActivityService:
     @staticmethod
+    @paginated_response
     def get_all():
-        return WorkActivity.query.all()
+        return WorkActivity.query
 
     @staticmethod
     def get_by_id(activity_id):

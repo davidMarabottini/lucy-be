@@ -6,7 +6,7 @@ sectors_bp = Blueprint('sectors_bp', __name__, url_prefix="/api/sectors")
 @sectors_bp.route('', methods=['GET'])
 def get_sectors():
     sectors = SectorService.get_all()
-    return jsonify([s.to_dict() for s in sectors]), 200
+    return jsonify(sectors), 200
 
 @sectors_bp.route('/<int:sector_id>', methods=['GET'])
 def get_sector(sector_id):

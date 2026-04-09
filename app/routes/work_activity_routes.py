@@ -8,7 +8,7 @@ def list_activities():
     """Ritorna l'anagrafica di tutte le attività (es. Pulizie, Portineria)"""
     activities = WorkActivityService.get_all()
     # Usa to_dict() che abbiamo aggiunto nel modello
-    return jsonify([a.to_dict() for a in activities])
+    return jsonify(activities)
 
 @activities_bp.route("", methods=["POST"])
 def create_activity():
