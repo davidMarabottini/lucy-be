@@ -67,5 +67,5 @@ build/
 # instance/
 *.db
 *.sqlite3
-openapi-lrp/
+openapi_lrp/
 *.spec

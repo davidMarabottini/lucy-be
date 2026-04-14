@@ -1,89 +1,35 @@
 import os
-import sys
 import logging
 import click
 import tempfile
 import atexit
-from base64 import urlsafe_b64encode
-from hashlib import sha256
 
 from flask import Flask, send_from_directory
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask.cli import with_appcontext
 from flask_cors import CORS
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-# -------------------------
-# INIT ESTENSIONI
-# -------------------------
-db = SQLAlchemy()
-migrate = Migrate()
+from .extension import db, migrate
+from .utils.crypto import get_fernet, encrypt_db, decrypt_db
+from .utils.paths import resolve_paths
+from .config.logger import configure_logging
+
+configure_logging()
 _shutdown_executed = False
 
 # -------------------------
-# LOGGING
+# DATABASE SETUP
 # -------------------------
-def configure_logging():
-    level = os.getenv("LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=getattr(logging, level, logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+def setup_database():
+    try:
+        db.create_all()
+        # Recuperiamo l'URI dalla configurazione dell'app corrente
+        from flask import current_app
+        db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI", "Unknown")
+        return f"✅ Database creato con successo!\nURI: {db_uri}"
+    except Exception as e:
+        logging.error(f"Errore durante db.create_all(): {e}")
+        return f"❌ Errore durante la creazione delle tabelle: {e}"
 
-# -------------------------
-# PATH UTILS
-# -------------------------
-def resolve_paths(db_path):
-    """Gestisce percorsi per dev / exe"""
-    if getattr(sys, "frozen", False):
-        base_path = sys._MEIPASS
-        # default_db = os.path.join(os.path.dirname(sys.executable), "lucy.db.enc")
-    else:
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    final_db_path = db_path or os.path.join(base_path, "lucy.db")
-    static_folder = os.path.join(base_path, "app", "static")
-    return base_path, os.path.abspath(final_db_path).replace("\\", "/"), static_folder
-
-# -------------------------
-# APP FACTORY
-# -------------------------
-def get_fernet(password: str) -> Fernet:
-    """Genera l'istanza Fernet usando PBKDF2 (Molto più sicuro di SHA256)"""
-    _SALT = b'\x82\x12\xaf\x19\x04\x11\x8c\x8e\x9f\x1a\x10\x92\xf4\x81\x32\x0b'
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=_SALT,
-        iterations=100000, # Rende gli attacchi brute-force lentissimi
-    )
-    key = urlsafe_b64encode(kdf.derive(password.encode()))
-    return Fernet(key)
-
-def decrypt_db(password: str, input_path: str, output_path: str):
-    """Legge il file criptato e lo scrive decriptato in un altro percorso"""
-    fernet = get_fernet(password)
-    with open(input_path, "rb") as f:
-        encrypted_data = f.read()
-    
-    decrypted_data = fernet.decrypt(encrypted_data)
-    
-    with open(output_path, "wb") as f:
-        f.write(decrypted_data)
-        
-def encrypt_db(password: str, input_path: str, output_path: str):
-    """Funzione atomica per criptare il file. Usata allo shutdown."""
-    fernet = get_fernet(password)
-    with open(input_path, "rb") as f:
-        data = f.read()
-    
-    encrypted_data = fernet.encrypt(data)
-    
-    with open(output_path, "wb") as f:
-        f.write(encrypted_data)
 
 def create_app(db_password: str, db_path=None):
     from tkinter import messagebox
@@ -146,19 +92,6 @@ def create_app(db_password: str, db_path=None):
 
     app.model_registry = ModelRegistry(root_dir=os.path.join(base_path, "app"))
 
-    # -------------------------
-    # DATABASE SETUP
-    # -------------------------
-    def setup_database():
-        try:
-            db.create_all()
-            # Recuperiamo l'URI dalla configurazione dell'app corrente
-            from flask import current_app
-            db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI", "Unknown")
-            return f"✅ Database creato con successo!\nURI: {db_uri}"
-        except Exception as e:
-            logging.error(f"Errore durante db.create_all(): {e}")
-            return f"❌ Errore durante la creazione delle tabelle: {e}"
 
     app.setup_database_func = setup_database
 
@@ -240,23 +173,6 @@ def create_app(db_password: str, db_path=None):
         os.remove(tmp_db_path)
         
     # -------------------------
-    # CLI UTILITY PER CRIPTARE
-    # -------------------------
-    @app.cli.command("encrypt-string")
-    @with_appcontext
-    def encrypt_string():
-        """Utility per cifrare una stringa con la password del DB"""
-        db_password = click.prompt("Inserisci la master password del DB", hide_input=True)
-        value_to_encrypt = click.prompt("Inserisci la stringa da criptare")
-        
-        encrypted = encrypt_value(value_to_encrypt, db_password)
-        
-        click.echo("\n🔐 Risultato criptato:")
-        click.echo(encrypted)
-
-    atexit.register(encrypt_db_on_exit)
-    
-    # -------------------------
     # SHUTDOWN + CIFRATURA
     # -------------------------
     def shutdown_and_encrypt():
@@ -275,7 +191,7 @@ def create_app(db_password: str, db_path=None):
             logging.info("Connessioni DB chiuse.")
             
             import time
-            time.sleep(0.2)
+            time.sleep(0.5)
             
             if not os.path.exists(tmp_db_path):
                 logging.warning("Shutdown: Il file temporaneo non esiste già più.")

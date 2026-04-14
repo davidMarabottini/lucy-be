@@ -1,5 +1,6 @@
 import os
-from app import create_app, configure_logging
+from app import create_app
+from app.config.logger import configure_logging
 
 app = create_app()
 
