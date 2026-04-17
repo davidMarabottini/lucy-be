@@ -1,6 +1,5 @@
 from .auth_routes import auth_bp
 from .user_routes import users_bp
-from .predict_routes import predict_bp
 from .libemax_routes import libemax_bp
 from .clients_routes import clients_bp
 from .work_activity_routes import activities_bp
@@ -14,7 +13,6 @@ from .work_schedule_type_route import wst_bp
 def register_routes(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
-    app.register_blueprint(predict_bp)
     app.register_blueprint(libemax_bp)
     app.register_blueprint(clients_bp)
     app.register_blueprint(activities_bp)

@@ -41,14 +41,12 @@ def create_app(db_password: str, db_path=None):
     from . import models  # noqa: F401
     from .routes import register_routes
     from .exception import register_error_handlers
-    from .services.model_registry import ModelRegistry
 
     register_routes(app)
     register_error_handlers(app)
     register_cli_commands(app)
     register_spa_routes(app)
 
-    app.model_registry = ModelRegistry(root_dir=os.path.join(base_path, "app"))
     app.setup_database_func = setup_database
 
     # Shutdown: cifra il DB all'uscita
