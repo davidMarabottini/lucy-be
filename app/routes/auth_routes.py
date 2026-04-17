@@ -48,7 +48,7 @@ def update_me():
   user = g.current_user
   data = request.get_json()
 
-  updated_user, error = UserService.update_user(user.id, data)
+  updated_user, error = UserService.update(user.id, data)
 
   if error:
       return jsonify({"status": "error", "message": error}), 400

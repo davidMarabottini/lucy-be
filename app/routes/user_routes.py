@@ -9,7 +9,7 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 @users_bp.route('', methods=['GET'])
 @requires_auth
 def list_users():
-    users = UserService.get_all_users()
+    users = UserService.get_all()
     return jsonify([{
         "id": u.id,
         "username": u.username,
@@ -23,7 +23,7 @@ def list_users():
 def add_user():
     data = request.get_json()
     data['roles'] = ['user'] 
-    user, error = UserService.create_user(data)
+    user, error = UserService.create(data)
     
     if error:
         return jsonify({"status": "error", "message": error}), 400
@@ -33,16 +33,23 @@ def add_user():
 @users_bp.route('/<int:user_id>', methods=['GET'])
 @requires_auth
 def get_single_user(user_id):
-    user, error = UserService.get_single_user(user_id)
-    if error:
-        return jsonify({"status": "error", "message": error}), 400
-    return jsonify(user)
+    user = UserService.get_by_id(user_id)
+    if not user:
+        return jsonify({"status": "error", "message": "Utente non trovato"}), 404
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "name": user.name,
+        "surname": user.surname,
+        "roles": [r.name for r in user.roles]
+    })
 
 @users_bp.route('/<int:user_id>', methods=['PUT'])
 @requires_auth
 def update_user(user_id):
     data = request.get_json()
-    user, error = UserService.update_user(user_id, data)
+    user, error = UserService.update(user_id, data)
     if error:
         return jsonify({"status": "error", "message": error}), 400
     return jsonify({"status": "success", "message": "Utente aggiornato"})
@@ -50,7 +57,7 @@ def update_user(user_id):
 @users_bp.route('/<int:user_id>', methods=['DELETE'])
 @requires_auth
 def delete_user(user_id):
-    success = UserService.delete_user(user_id)
+    success = UserService.delete(user_id)
     if not success:
         return jsonify({"status": "error", "message": "Utente non trovato"}), 404
     return jsonify({"status": "success", "message": "Utente eliminato"})

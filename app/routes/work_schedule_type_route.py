@@ -6,29 +6,14 @@ wst_bp = Blueprint('work_schedule_types', __name__, url_prefix="/api/work-schedu
 @wst_bp.route('', methods=['GET'])
 def get_types():
     types = WorkScheduleTypeService.get_all()
-    # Uso una list comprehension manuale se non hai il metodo to_dict nel modello
-    return jsonify([{
-        "id": t.id,
-        "name": t.name,
-        "description": t.description,
-        "frequency": t.frequency,
-        "period": t.period,
-        "icon_name": t.icon_name
-    } for t in types]), 200
+    return jsonify(types), 200
 
 @wst_bp.route('/<int:wst_id>', methods=['GET'])
 def get_type(wst_id):
     t = WorkScheduleTypeService.get_by_id(wst_id)
     if not t:
         return jsonify({"error": "Tipologia non trovata"}), 404
-    return jsonify({
-        "id": t.id,
-        "name": t.name,
-        "description": t.description,
-        "frequency": t.frequency,
-        "period": t.period,
-        "icon_name": t.icon_name
-    }), 200
+    return jsonify(t.to_dict()), 200
 
 @wst_bp.route('', methods=['POST'])
 def create_type():

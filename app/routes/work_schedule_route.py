@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify
 from ..services.work_schedule_service import WorkScheduleService
-from app.auth.decorators  import paginated_response, requires_auth
+from app.auth.decorators import requires_auth
 
 schedule_bp = Blueprint('work_schedules', __name__, url_prefix='/api/work-schedules')
 
 @schedule_bp.route('', methods=['GET'])
 @requires_auth
-@paginated_response
 def get_work_schedules():
-    return WorkScheduleService.get_all_schedules_query()
+    schedules = WorkScheduleService.get_all()
+    return jsonify(schedules), 200
 
 @schedule_bp.route('/<int:id>', methods=['GET'])
 @requires_auth
@@ -22,8 +22,7 @@ def get_one(id):
 @requires_auth
 def create():
     try:
-        schedule = WorkScheduleService.create_schedule(request.json)
-        # Recupero l'oggetto completo di join per la risposta
+        schedule = WorkScheduleService.create(request.json)
         full_schedule = WorkScheduleService.get_by_id(schedule.id)
         return jsonify(full_schedule.to_dict()), 201
     except Exception as e:
@@ -33,7 +32,7 @@ def create():
 @requires_auth
 def update(id):
     try:
-        schedule = WorkScheduleService.update_schedule(id, request.json)
+        schedule = WorkScheduleService.update(id, request.json)
         if not schedule:
             return jsonify({"message": "Orario non trovato"}), 404
         return jsonify(schedule.to_dict())
@@ -43,6 +42,6 @@ def update(id):
 @schedule_bp.route('/<int:id>', methods=['DELETE'])
 @requires_auth
 def delete(id):
-    if WorkScheduleService.delete_schedule(id):
+    if WorkScheduleService.delete(id):
         return jsonify({"message": "Eliminato con successo"}), 200
     return jsonify({"message": "Orario non trovato"}), 404
