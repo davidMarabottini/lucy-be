@@ -5,6 +5,7 @@ import logging
 import os
 import tkinter as tk
 from tkinter import messagebox, simpledialog
+from werkzeug.serving import make_server
 
 from core.config import DB_PATH
 from app import create_app
@@ -29,8 +30,9 @@ def start_server(status_var_text):
         
         state.active_app = create_app(db_path=normalized_db_path, db_password=password)
         
+        state.server_instance = make_server("127.0.0.1", 5000, state.active_app)
         state.server_thread = threading.Thread(
-            target=lambda: state.active_app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False),
+            target=state.server_instance.serve_forever,
             daemon=True
         )
         state.server_thread.start()
@@ -49,12 +51,19 @@ def stop_server(status_var_text):
         return
 
     try:
+        # Prima ferma il server HTTP (rilascia il lock sul file DB)
+        if state.server_instance:
+            state.server_instance.shutdown()
+            state.server_thread.join(timeout=5)
+
+        # Poi cifra il DB
         if hasattr(state.active_app, "shutdown_func"):
             state.active_app.shutdown_func()
 
         # Pulizia dello STATO GLOBALE
         state.active_app = None
         state.server_thread = None
+        state.server_instance = None
 
         status_var_text.set("Stato: 🔴 Server Fermato (DB criptato)")
         messagebox.showinfo("OK", "Server fermato correttamente")

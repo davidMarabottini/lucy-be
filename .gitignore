@@ -69,3 +69,4 @@ build/
 *.sqlite3
 openapi_lrp/
 *.spec
+PROJECT_ANALYSIS.md

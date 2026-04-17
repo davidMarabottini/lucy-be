@@ -1,6 +1,9 @@
 import os
+from dotenv import load_dotenv
 from app import create_app
 from app.config.logger import configure_logging
+
+load_dotenv()
 
 app = create_app()
 

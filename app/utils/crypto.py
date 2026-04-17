@@ -4,11 +4,11 @@ from hashlib import sha256
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
+import os;
 
 def get_fernet(password: str) -> Fernet:
     """Genera l'istanza Fernet usando PBKDF2 (Molto più sicuro di SHA256)"""
-    _SALT = b'\x82\x12\xaf\x19\x04\x11\x8c\x8e\x9f\x1a\x10\x92\xf4\x81\x32\x0b'
+    _SALT = os.environ["SALT"].encode("latin-1")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

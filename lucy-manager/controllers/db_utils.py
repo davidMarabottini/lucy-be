@@ -5,7 +5,7 @@ import shutil
 from datetime import datetime
 from tkinter import filedialog, messagebox
 import logging
-from app import decrypt_db, encrypt_db
+from app.utils.crypto import decrypt_db, encrypt_db
 
 
 APPDATA_DIR = os.path.join(os.environ.get('APPDATA'), "LucyManager")

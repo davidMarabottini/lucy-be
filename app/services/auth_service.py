@@ -6,8 +6,7 @@ from ..models import User, Role, db
 from sqlalchemy import or_
 
 class AuthService:
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-123")
-    
+    SECRET_KEY = os.environ["INTERNAL_SECRET_KEY"]
     @staticmethod
     def generate_token(user):
         """Genera un JWT reale con scadenza a 4 ore."""
