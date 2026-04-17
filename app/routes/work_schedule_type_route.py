@@ -1,14 +1,17 @@
 from flask import Blueprint, request, jsonify
 from ..services.work_schedule_type_service import WorkScheduleTypeService
+from ..auth.decorators import requires_auth
 
 wst_bp = Blueprint('work_schedule_types', __name__, url_prefix="/api/work-schedule-types")
 
 @wst_bp.route('', methods=['GET'])
+@requires_auth
 def get_types():
     types = WorkScheduleTypeService.get_all()
     return jsonify(types), 200
 
 @wst_bp.route('/<int:wst_id>', methods=['GET'])
+@requires_auth
 def get_type(wst_id):
     t = WorkScheduleTypeService.get_by_id(wst_id)
     if not t:
@@ -16,6 +19,7 @@ def get_type(wst_id):
     return jsonify(t.to_dict()), 200
 
 @wst_bp.route('', methods=['POST'])
+@requires_auth
 def create_type():
     data = request.get_json()
     if not data or 'name' not in data:
@@ -25,6 +29,7 @@ def create_type():
     return jsonify({"id": new_type.id, "name": new_type.name}), 201
 
 @wst_bp.route('/<int:wst_id>', methods=['PUT'])
+@requires_auth
 def update_type(wst_id):
     data = request.get_json()
     updated = WorkScheduleTypeService.update(wst_id, data)
@@ -33,6 +38,7 @@ def update_type(wst_id):
     return jsonify({"message": "Tipologia aggiornata con successo"}), 200
 
 @wst_bp.route('/<int:wst_id>', methods=['DELETE'])
+@requires_auth
 def delete_type(wst_id):
     success = WorkScheduleTypeService.delete(wst_id)
     if not success:
