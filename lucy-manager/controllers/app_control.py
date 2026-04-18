@@ -30,7 +30,7 @@ def start_server(status_var_text):
         
         state.active_app = create_app(db_path=normalized_db_path, db_password=password)
         
-        state.server_instance = make_server("127.0.0.1", 5000, state.active_app)
+        state.server_instance = make_server("127.0.0.1", 5000, state.active_app, threaded=True)
         state.server_thread = threading.Thread(
             target=state.server_instance.serve_forever,
             daemon=True

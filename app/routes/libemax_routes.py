@@ -7,7 +7,7 @@ libemax_bp = Blueprint("libemax", __name__, url_prefix="/api/libemax")
 
 # ---- Tutti gli utenti con dettagli aggiuntivi ----
 @libemax_bp.route("/users", methods=["GET"])
-@requires_auth
+# @requires_auth
 def get_users():
     users = [
         {"id": 1, "name": "Mario Rossi", "email": "m.rossi@example.com",
@@ -21,7 +21,7 @@ def get_users():
 
 # ---- Tutti i clienti con indirizzo ----
 @libemax_bp.route("/clients", methods=["GET"])
-@requires_auth
+# @requires_auth
 def get_clients():
     clients = [
         {"id": 1, "name": "Cliente A", "address": "Via Milano 10, Roma"},
@@ -32,7 +32,7 @@ def get_clients():
 
 # ---- Utenti che dovrebbero essere al lavoro ma non hanno timbrato (con telefono) ----
 @libemax_bp.route("/missing_clockin", methods=["GET"])
-@requires_auth
+# @requires_auth
 def missing_clockin():
     missing = [
         {"id": 1, "name": "Mario Rossi", "expected_time": "09:00", "phone": "333-1234567", "delay": 2},
@@ -42,7 +42,7 @@ def missing_clockin():
 
 # ---- Utenti che hanno timbrato lontano dal luogo di lavoro ----
 @libemax_bp.route("/remote_clockin", methods=["GET"])
-@requires_auth
+# @requires_auth
 def remote_clockin():
     remote = [
         {"id": 2, "name": "Luigi Bianchi", "time": "09:15", "location": "Via Roma 123, Milano", "distance": 3},
@@ -51,7 +51,7 @@ def remote_clockin():
 
 # ---- Dettagli di un singolo cliente/condominio ----
 @libemax_bp.route("/clients/<int:client_id>", methods=["GET"])
-@requires_auth
+# @requires_auth
 def client_details(client_id: int):
     clients = {
         1: {"id": 1, "name": "Cliente A", "address": "Via Milano 10, Roma",

@@ -6,13 +6,13 @@ from ..auth.decorators import requires_auth
 week_days_bp = Blueprint("week_days", __name__, url_prefix="/api/week-days")
 
 @week_days_bp.route("", methods=["GET"])
-@requires_auth
+# @requires_auth
 def list_week_days():
     items = WeekDaysService.get_all()
     return jsonify(items)
 
 @week_days_bp.route("/<int:week_day_id>", methods=["GET"])
-@requires_auth
+# @requires_auth
 def get_week_day(week_day_id):
     item = WeekDaysService.get_by_id(week_day_id)
     if not item:

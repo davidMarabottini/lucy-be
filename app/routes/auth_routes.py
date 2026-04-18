@@ -5,7 +5,7 @@ from ..services.user_service import UserService
 
 auth_bp = Blueprint("auth", __name__, url_prefix="")
 
-@auth_bp.route('/login', methods=['POST'])
+@auth_bp.route('/api/login', methods=['POST'])
 def login():
   data = request.get_json()
   response, error = AuthService.login_user(data.get('username'), data.get('password'))
@@ -14,7 +14,7 @@ def login():
       return jsonify({"status": "error", "message": error}), 401
   return response
 
-@auth_bp.route('/logout', methods=['POST'])
+@auth_bp.route('/api/logout', methods=['POST'])
 def logout():
   return AuthService.logout_user()
 

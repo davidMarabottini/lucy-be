@@ -5,7 +5,7 @@ from ..auth.decorators import requires_auth
 activities_bp = Blueprint("activities", __name__, url_prefix="/api/activities")
 
 @activities_bp.route("", methods=["GET"])
-@requires_auth
+# @requires_auth
 def list_activities():
     """Ritorna l'anagrafica di tutte le attività (es. Pulizie, Portineria)"""
     activities = WorkActivityService.get_all()
@@ -13,7 +13,7 @@ def list_activities():
     return jsonify(activities)
 
 @activities_bp.route("", methods=["POST"])
-@requires_auth
+# @requires_auth
 def create_activity():
     """Crea un nuovo tipo di attività nel catalogo"""
     data = request.get_json()
@@ -27,7 +27,7 @@ def create_activity():
     return jsonify(activity.to_dict()), 201
 
 @activities_bp.route("/<int:activity_id>", methods=["GET"])
-@requires_auth
+# @requires_auth
 def get_activity(activity_id):
     activity = WorkActivityService.get_by_id(activity_id)
     if not activity:
@@ -35,7 +35,7 @@ def get_activity(activity_id):
     return jsonify(activity.to_dict())
 
 @activities_bp.route("/<int:activity_id>", methods=["PUT"])
-@requires_auth
+# @requires_auth
 def update_activity(activity_id):
     """Aggiorna name o description di un'attività esistente"""
     data = request.get_json()
@@ -51,7 +51,7 @@ def update_activity(activity_id):
     })
 
 @activities_bp.route("/<int:activity_id>", methods=["DELETE"])
-@requires_auth
+# @requires_auth
 def delete_activity(activity_id):
     success = WorkActivityService.delete(activity_id)
     if not success:

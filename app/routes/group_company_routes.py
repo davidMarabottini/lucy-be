@@ -5,7 +5,7 @@ from ..auth.decorators import requires_auth
 group_company_bp = Blueprint('group_company_bp', __name__, url_prefix="/api/group-company")
 
 @group_company_bp.route('', methods=['GET'])
-@requires_auth
+# @requires_auth
 def get_companies():
     """Recupera tutte le società del gruppo"""
     companies = GroupCompanyService.get_all()
@@ -14,7 +14,7 @@ def get_companies():
     # return jsonify([c.to_dict() for c in companies]), 200
 
 @group_company_bp.route('/<int:company_id>', methods=['GET'])
-@requires_auth
+# @requires_auth
 def get_company(company_id):
     """Recupera una singola società per ID"""
     company = GroupCompanyService.get_by_id(company_id)
@@ -23,7 +23,7 @@ def get_company(company_id):
     return jsonify(company.to_dict()), 200
 
 @group_company_bp.route('', methods=['POST'])
-@requires_auth
+# @requires_auth
 def create_company():
     """Crea una nuova società del gruppo"""
     data = request.get_json()
@@ -39,7 +39,7 @@ def create_company():
         return jsonify({"error": str(e)}), 400
 
 @group_company_bp.route('/<int:company_id>', methods=['PUT'])
-@requires_auth
+# @requires_auth
 def update_company(company_id):
     """Aggiorna una società esistente"""
     data = request.get_json()
@@ -49,7 +49,7 @@ def update_company(company_id):
     return jsonify(updated_company.to_dict()), 200
 
 @group_company_bp.route('/<int:company_id>', methods=['DELETE'])
-@requires_auth
+# @requires_auth
 def delete_company(company_id):
     """Elimina una società"""
     success = GroupCompanyService.delete(company_id)

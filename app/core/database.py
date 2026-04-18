@@ -37,6 +37,12 @@ def configure_app_db(app, tmp_db_path):
     """Configura SQLAlchemy e le sessioni sull'app Flask."""
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_db_path}"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"check_same_thread": False},
+        "pool_size": 5,
+        "pool_recycle": 3600,
+        "pool_pre_ping": True,
+    }
 
     app.config.update(
         SESSION_COOKIE_SECURE=False,

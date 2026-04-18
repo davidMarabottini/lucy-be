@@ -31,7 +31,12 @@ def create_app(db_password: str, db_path=None):
     configure_app_db(app, tmp_db_path)
 
     # CORS
-    CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True, origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+    ])
 
     # Init estensioni
     db.init_app(app)
