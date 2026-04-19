@@ -21,7 +21,9 @@ class LibemaxBase:
         url = f"{self.base_url}/{self.lang}/api/{self.api_version}/{endpoint}"
         headers = {"x-api-key": self.api_key}
 
+        logger.info("POST %s", url)
         resp = requests.post(url, data=payload or {}, headers=headers, timeout=30)
+        logger.info("POST %s → %s", url, resp.status_code)
 
         if resp.status_code == 401:
             raise APIError("API key Libemax non valida", 401)
@@ -41,7 +43,9 @@ class LibemaxBase:
         url = f"{self.base_url}/{self.lang}/api/{self.api_version}/{endpoint}"
         headers = {"x-api-key": self.api_key}
 
+        logger.info("POST multipart %s", url)
         resp = requests.post(url, data=payload or {}, files=files or {}, headers=headers, timeout=60)
+        logger.info("POST multipart %s → %s", url, resp.status_code)
 
         if resp.status_code == 401:
             raise APIError("API key Libemax non valida", 401)

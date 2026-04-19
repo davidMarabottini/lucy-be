@@ -16,10 +16,10 @@ from .core import (
     create_shutdown_handler,
 )
 
-configure_logging()
-
 
 def create_app(db_password: str = None, db_path=None):
+    configure_logging()
+
     base_path, abs_db_path, static_folder = resolve_paths(db_path)
 
     app = Flask(__name__, static_folder=static_folder)
