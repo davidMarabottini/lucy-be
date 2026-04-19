@@ -108,6 +108,30 @@ def utility_cripta_db():
         logging.error(f"Errore utility criptazione: {e}")
         messagebox.showerror("Errore", f"Impossibile criptare il file: {e}")
 
+
+def run_migrations():
+    """Applica le migration Alembic pendenti (solo DEV_MODE)"""
+    if not os.path.exists(DB_PATH):
+        messagebox.showwarning("Database Mancante", "Il database non esiste. Inizializzalo prima.")
+        return
+
+    password = simpledialog.askstring("DB Migrate", "Password del database:", show='*')
+    if not password:
+        return
+
+    try:
+        temp_app = create_app(db_path=DB_PATH, db_password=password)
+
+        with temp_app.app_context():
+            from flask_migrate import upgrade
+            upgrade()
+
+        messagebox.showinfo("Successo", "Migration applicate correttamente!")
+        logging.info("Migration Alembic applicate con successo.")
+    except Exception as e:
+        logging.error(f"Errore durante le migration: {e}")
+        messagebox.showerror("Errore", f"Impossibile applicare le migration: {e}")
+
 def initialize_db():
     if os.path.exists(DB_PATH):
         messagebox.showinfo("Info", "Il database esiste già. Usa 'Avvia Server' per accedere.")

@@ -1,64 +1,49 @@
-import os
-from openapi_lrp.api_pubbliche_libemax_client import AuthenticatedClient
+from .libemax_base import LibemaxBase
+from .libemax_mappers import map_cliente
 
-from openapi_lrp.api_pubbliche_libemax_client.api.cliente import (
-    post_lang_api_api_version_cliente_cliente_elenco
-)
-from openapi_lrp.api_pubbliche_libemax_client.models.response_cliente_elenco import ResponseClienteElenco
-from ...models import db, Client
-import logging
 
-class LibemaxClientService:
-    def __init__(self):
-        self.api_key = os.getenv("DISINFEKTMI_LIBEMAX_API_KEY")
-        self.base_url = os.getenv("LIBEMAX_BASE_URL", "https://api.libemax.com")
-        self.default_lang = "it"
-        self.api_version = "3.0"
+class LibemaxClienteService(LibemaxBase):
 
-    def _get_client(self):
-        return AuthenticatedClient(
-            base_url=self.base_url, 
-            token=self.api_key,
-            prefix="x-api-key",
-            auth_header_name="x-api-key"
-        )
+    def get_list(self):
+        dati = self._post("cliente/cliente_elenco")
+        items = dati.get("cliente", [])
+        return [map_cliente(c) for c in items]
 
-    def sync_clients(self):
-        logging.info("Inizio sincronizzazione clienti")
-        client = self._get_client()
-        json_body = {}
-        
-        # json_body = RequestClienteElenco()
-        
-        response = post_lang_api_api_version_cliente_cliente_elenco.sync_detailed(
-            client=client,
-            lang=self.default_lang,
-            api_version=self.api_version,
-            json_body=json_body
-        )
+    def sync(self, data: dict):
+        payload = {}
+        field_map = {
+            "id": "id",
+            "code": "codice_gestionale",
+            "name": "nome",
+            "address": "indirizzo",
+            "city": "citta",
+            "province": "provincia",
+            "country": "stato",
+            "zip": "cap",
+            "vat": "piva",
+            "phone": "telefono",
+            "email": "email",
+            "latitude": "latitudine",
+            "longitude": "longitudine",
+            "notes": "note",
+            "contact_name": "contatto",
+            "contact_mobile": "contatto_cellulare",
+            "contact_email": "contatto_email",
+            "archived": "archiviato",
+        }
+        for en_key, it_key in field_map.items():
+            if en_key in data:
+                payload[it_key] = data[en_key]
 
-        if response.status_code != 200:
-            logging.error(f"Errore API Libemax: {response.status_code}")
-            return 0, f"Libemax API Error: {response.status_code}"
+        if "employee_ids" in data:
+            payload["dipendente_id"] = data["employee_ids"]
+        if "employee_codes" in data:
+            payload["dipendente_codice_gestionale"] = data["employee_codes"]
 
-        parsed: ResponseClienteElenco = response.parsed
-        if not parsed or parsed.ritorno != 1:
-            logging.warning("Errore nel parsing dei dati o esito negativo")
-            return 0, "Errore nel parsing dei dati o esito negativo"
+        dati = self._post("cliente/cliente_sincronizza", payload)
+        return map_cliente(dati.get("cliente", {}))
 
-        remote_clients = parsed.dati if hasattr(parsed, 'dati') else []
-        new_count = 0
-
-        for r_client in remote_clients:
-            if not Client.query.filter_by(libemax_id=r_client.id).first():
-                new_client = Client(
-                    name=r_client.ragione_sociale,
-                    libemax_id=r_client.id,
-                    email=getattr(r_client, 'email', None)
-                )
-                db.session.add(new_client)
-                new_count += 1
-        
-        db.session.commit()
-        logging.info("Clienti aggiornati")
-        return new_count, None
+    def delete(self, identifier: str, by_id: bool = False):
+        payload = {"id": identifier} if by_id else {"codice_gestionale": identifier}
+        self._post("cliente/cliente_elimina", payload)
+        return True

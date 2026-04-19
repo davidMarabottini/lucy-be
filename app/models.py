@@ -40,6 +40,7 @@ class User(db.Model, BaseModel):
 class Client(db.Model, BaseModel):
     __tablename__ = 'clients'
     id = db.Column(db.Integer, primary_key=True)
+    libemax_id = db.Column(db.Integer, unique=True, nullable=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
     phone = db.Column(db.String(50))

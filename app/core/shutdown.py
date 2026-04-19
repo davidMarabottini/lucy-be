@@ -18,6 +18,9 @@ def create_shutdown_handler(app, fernet, tmp_db_path, abs_db_path):
         if _shutdown_executed or app is None:
             return
 
+        if fernet is None:
+            return
+
         try:
             logging.info("Avvio procedura di chiusura sicura...")
 

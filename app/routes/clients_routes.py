@@ -37,4 +37,14 @@ def create_client():
 def delete_client(client_id):
     isDeleted = ClientService.delete(client_id)
     return jsonify({"success": isDeleted})
+
+
+@clients_bp.route("/sync-libemax", methods=["POST"])
+# @requires_auth
+def sync_libemax():
+    try:
+        synced = ClientService.sync_from_libemax()
+        return jsonify({"success": True, "synced": synced}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 502
     

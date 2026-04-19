@@ -19,13 +19,15 @@ from .core import (
 configure_logging()
 
 
-def create_app(db_password: str, db_path=None):
+def create_app(db_password: str = None, db_path=None):
     base_path, abs_db_path, static_folder = resolve_paths(db_path)
 
     app = Flask(__name__, static_folder=static_folder)
 
-    # DB temporaneo decriptato
-    fernet, tmp_db_path = prepare_temp_db(db_password, abs_db_path)
+    if db_password:
+        fernet, tmp_db_path = prepare_temp_db(db_password, abs_db_path)
+    else:
+        fernet, tmp_db_path = None, abs_db_path
 
     # Configurazione SQLAlchemy + sessioni
     configure_app_db(app, tmp_db_path)
