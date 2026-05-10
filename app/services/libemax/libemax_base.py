@@ -12,12 +12,27 @@ class LibemaxBase:
 
     def __init__(self):
         self.api_key = os.getenv("LIBEMAX_API_KEY")
-        self.base_url = os.getenv("LIBEMAX_BASE_URL", "https://app.libemax.com")
+        self.base_url = os.getenv("LIBEMAX_BASE_URL")
         self.lang = "it"
         self.api_version = "v3"
+        if not self.api_key:
+            logger.warning("LIBEMAX_API_KEY non configurata nel file .env")
+        if not self.base_url:
+            logger.warning(
+                "LIBEMAX_BASE_URL non configurata nel file .env. "
+                "Formato atteso: https://{account}.libemax.com/app-timbrature"
+            )
 
     def _post(self, endpoint: str, payload: dict = None):
         """POST form-urlencoded verso Libemax. Ritorna il contenuto di 'dati'."""
+        if not self.api_key:
+            raise APIError("LIBEMAX_API_KEY non configurata nel file .env", 500)
+        if not self.base_url:
+            raise APIError(
+                "LIBEMAX_BASE_URL non configurata nel file .env. "
+                "Formato: https://{account}.libemax.com/app-timbrature",
+                500,
+            )
         url = f"{self.base_url}/{self.lang}/api/{self.api_version}/{endpoint}"
         headers = {"x-api-key": self.api_key}
 
