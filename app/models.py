@@ -1,5 +1,3 @@
-from app.baseModel import BaseModel
-
 from . import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -13,13 +11,13 @@ user_roles = db.Table(
 )
 
 # Ruoli
-class Role(db.Model, BaseModel):
+class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
 
 # Utenti
-class User(db.Model, BaseModel):
+class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -37,7 +35,7 @@ class User(db.Model, BaseModel):
         return check_password_hash(self.password_hash, password)
 
 # Clienti
-class Client(db.Model, BaseModel):
+class Client(db.Model):
     __tablename__ = 'clients'
     id = db.Column(db.Integer, primary_key=True)
     libemax_id = db.Column(db.Integer, unique=True, nullable=True)
@@ -46,13 +44,13 @@ class Client(db.Model, BaseModel):
     phone = db.Column(db.String(50))
     
 # Giorni della settimana
-class WeekDay(db.Model, BaseModel):
+class WeekDay(db.Model):
     __tablename__ = 'week_days'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False, unique=True)
 
 # Tipi di orario
-class WorkScheduleType(db.Model, BaseModel):
+class WorkScheduleType(db.Model):
     __tablename__ = 'work_schedule_types'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -67,7 +65,7 @@ class WorkScheduleType(db.Model, BaseModel):
     icon_name = db.Column(db.String(50), default='Clock') # Nome icona Lucide (es: 'Home', 'Zap')
 
 # Attività specifiche (per day/task)
-class WorkActivity(db.Model, BaseModel):
+class WorkActivity(db.Model):
     __tablename__ = 'work_activities'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
@@ -83,14 +81,14 @@ company_sectors = db.Table(
     db.UniqueConstraint('company_id', 'sector_id', name='unique_company_sector')
 )
 
-class Sector(db.Model, BaseModel):
+class Sector(db.Model):
     __tablename__ = 'sectors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
     description = db.Column(db.String(255), nullable=True)
 
 
-class GroupCompany(db.Model, BaseModel):
+class GroupCompany(db.Model):
     __tablename__ = 'group_companies'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
@@ -99,7 +97,7 @@ class GroupCompany(db.Model, BaseModel):
     # Relazione Many-to-Many
     sectors = db.relationship('Sector', secondary=company_sectors, backref=db.backref('companies', lazy='dynamic'))
     
-class Contract(db.Model, BaseModel):
+class Contract(db.Model):
     __tablename__ = 'contracts'
     id = db.Column(db.Integer, primary_key=True)
     contract_code = db.Column(db.String(50), unique=True, nullable=False)
@@ -116,7 +114,7 @@ class Contract(db.Model, BaseModel):
     provider_company = db.relationship('GroupCompany', backref=db.backref('contracts', lazy='dynamic'))
     client = db.relationship('Client', backref=db.backref('contracts', lazy='dynamic'))
     
-class WorkSchedule(db.Model, BaseModel):
+class WorkSchedule(db.Model):
     __tablename__ = 'work_schedules'
     id = db.Column(db.Integer, primary_key=True)
     
