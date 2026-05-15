@@ -14,6 +14,13 @@ class WorkScheduleService(BaseService):
     ]
 
     @classmethod
+    def get_by_contract(cls, contract_id):
+        query = WorkSchedule.query.filter_by(contract_id=contract_id)
+        if cls.query_options:
+            query = query.options(*cls.query_options)
+        return query.all()
+
+    @classmethod
     def create(cls, data):
         # 1. Pulizia stringhe vuote e conversione tipi base
         processed_data = {}

@@ -18,6 +18,12 @@ def get_one(id):
         return jsonify({"message": "Orario non trovato"}), 404
     return jsonify(schedule.to_dict())
 
+@schedule_bp.route('/contract/<int:contract_id>', methods=['GET'])
+# @requires_auth
+def get_by_contract(contract_id):
+    schedules = WorkScheduleService.get_by_contract(contract_id)
+    return jsonify([s.to_dict() for s in schedules]), 200
+
 @schedule_bp.route('', methods=['POST'])
 # @requires_auth
 def create():
