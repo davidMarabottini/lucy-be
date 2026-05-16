@@ -14,6 +14,11 @@ class BaseService:
     model = None
     query_options = []
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if cls.model is None:
+            raise TypeError(f"{cls.__name__} deve definire 'model'")
+
     @classmethod
     @paginated_response
     def get_all(cls):

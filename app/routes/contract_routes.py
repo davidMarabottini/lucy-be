@@ -5,13 +5,13 @@ from ..auth.decorators import requires_auth
 contracts_bp = Blueprint("contracts", __name__, url_prefix="/api/contracts")
 
 @contracts_bp.route("", methods=["GET"])
-@requires_auth
+# @requires_auth
 def list_contracts():
     contracts = ContractService.get_all()
     return jsonify(contracts), 200
 
 @contracts_bp.route("/<int:contract_id>", methods=["GET"])
-@requires_auth
+# @requires_auth
 def get_contract(contract_id):
     contract = ContractService.get_by_id(contract_id)
     if not contract:
@@ -35,7 +35,7 @@ def get_contract(contract_id):
     })
 
 @contracts_bp.route("", methods=["POST"])
-@requires_auth
+# @requires_auth
 def create_contract():
     data = request.get_json()
     # Il service ora riceverà il payload corretto (contract_code, client_id, ecc.)
@@ -43,7 +43,7 @@ def create_contract():
     return jsonify({"id": contract.id}), 201
 
 @contracts_bp.route("/<int:contract_id>", methods=["DELETE"])
-@requires_auth
+# @requires_auth
 def delete_contract(contract_id):
     isDeleted = ContractService.delete(contract_id)
     return jsonify({"success": isDeleted})

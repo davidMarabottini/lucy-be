@@ -16,22 +16,29 @@ from .core import (
     create_shutdown_handler,
 )
 
-configure_logging()
 
+def create_app(db_password: str = None, db_path=None):
+    configure_logging()
 
-def create_app(db_password: str, db_path=None):
     base_path, abs_db_path, static_folder = resolve_paths(db_path)
 
     app = Flask(__name__, static_folder=static_folder)
 
-    # DB temporaneo decriptato
-    fernet, tmp_db_path = prepare_temp_db(db_password, abs_db_path)
+    if db_password:
+        fernet, tmp_db_path = prepare_temp_db(db_password, abs_db_path)
+    else:
+        fernet, tmp_db_path = None, abs_db_path
 
     # Configurazione SQLAlchemy + sessioni
     configure_app_db(app, tmp_db_path)
 
     # CORS
-    CORS(app, supports_credentials=True)
+    CORS(app, supports_credentials=True, origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+    ])
 
     # Init estensioni
     db.init_app(app)
