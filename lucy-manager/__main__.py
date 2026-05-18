@@ -56,6 +56,9 @@ def main():
     create_sidebar_button(sidebar, "🔗 Sync Clienti Libemax",
       data_config.sync_libemax_clients).pack(fill="x", padx=10, pady=2)
 
+    create_sidebar_button(sidebar, "⚙️ Generate Migration",
+      db_utils.generate_migration).pack(fill="x", padx=10, pady=2)
+    
     if os.environ.get("DEV_MODE", "").lower() in ("1", "true"):
         create_sidebar_button(sidebar, "🔄 DB Migrate",
           db_utils.run_migrations).pack(fill="x", padx=10, pady=2)
