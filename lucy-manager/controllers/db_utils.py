@@ -108,7 +108,34 @@ def utility_cripta_db():
         logging.error(f"Errore utility criptazione: {e}")
         messagebox.showerror("Errore", f"Impossibile criptare il file: {e}")
 
+def generate_migration():
+    """Genera un nuovo file di migration (solo DEV_MODE)"""
+    if not os.path.exists(DB_PATH):
+        messagebox.showwarning("Database Mancante", "Il database non esiste. Inizializzalo prima.")
+        return
 
+    password = simpledialog.askstring("Generate Migration", "Password del database:", show='*')
+    if not password:
+        return
+
+    message = simpledialog.askstring("Generate Migration", "Descrizione della migration:")
+    if not message:
+        return
+
+    try:
+        temp_app = create_app(db_path=DB_PATH, db_password=password)
+
+        with temp_app.app_context():
+            from flask_migrate import migrate as generate, stamp
+            stamp()
+            generate(message=message)
+
+        messagebox.showinfo("Successo", "Migration generata in migrations/versions/")
+        logging.info("Migration Alembic generata con successo.")
+    except Exception as e:
+        logging.error(f"Errore durante la generazione migration: {e}")
+        messagebox.showerror("Errore", f"Impossibile generare la migration: {e}")
+        
 def run_migrations():
     """Applica le migration Alembic pendenti (solo DEV_MODE)"""
     if not os.path.exists(DB_PATH):
@@ -123,8 +150,22 @@ def run_migrations():
         temp_app = create_app(db_path=DB_PATH, db_password=password)
 
         with temp_app.app_context():
-            from flask_migrate import upgrade
-            upgrade()
+            from flask_migrate import upgrade, stamp
+            from sqlalchemy import inspect as sa_inspect, text
+            from app.extension import db as app_db
+
+            # Controlla se alembic_version ha un valore valido (non solo se la tabella esiste)
+            is_stamped = False
+            if 'alembic_version' in sa_inspect(app_db.engine).get_table_names():
+                row = app_db.session.execute(text('SELECT version_num FROM alembic_version LIMIT 1')).fetchone()
+                is_stamped = row is not None
+
+            if not is_stamped:
+                # DB senza versione: crea tabelle mancanti e segna come aggiornato
+                app_db.create_all()
+                stamp()
+            else:
+                upgrade()
 
         messagebox.showinfo("Successo", "Migration applicate correttamente!")
         logging.info("Migration Alembic applicate con successo.")
