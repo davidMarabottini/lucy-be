@@ -150,3 +150,28 @@ class WorkSchedule(db.Model):
             data['end_time'] = self.end_time.strftime("%H:%M")
             
         return data
+    
+class Employee(db.Model):
+    __tablename__ = 'employees'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    surname = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=True)
+    phone = db.Column(db.String(50), nullable=True)
+
+    assignments = db.relationship('EmployeeContract', backref='employee', lazy='dynamic')
+
+
+class EmployeeContract(db.Model):
+    __tablename__ = 'employee_contracts'
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=False)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contracts.id'), nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('employee_id', 'contract_id', name='unique_employee_contract'),
+    )
+
+    contract = db.relationship('Contract', backref=db.backref('employee_assignments', lazy='dynamic'))
