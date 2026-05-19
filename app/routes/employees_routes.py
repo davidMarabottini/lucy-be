@@ -21,6 +21,7 @@ def get_employee(employee_id):
     return jsonify({
         "id": employee.id,
         "name": employee.name,
+        "surname": employee.surname,
         "email": employee.email,
         "phone": employee.phone
     })
