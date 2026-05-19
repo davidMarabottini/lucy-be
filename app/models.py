@@ -158,6 +158,7 @@ class Employee(db.Model):
     surname = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), nullable=True)
     phone = db.Column(db.String(50), nullable=True)
+    libemax_id = db.Column(db.Integer, unique=True, nullable=True)
 
     assignments = db.relationship('EmployeeContract', backref='employee', lazy='dynamic')
 
