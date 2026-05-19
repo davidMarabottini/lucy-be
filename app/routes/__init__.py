@@ -1,6 +1,7 @@
 from .auth_routes import auth_bp
 from .user_routes import users_bp
 from .clients_routes import clients_bp
+from .employees_routes import employees_bp
 from .work_activity_routes import activities_bp
 from .work_schedule_route import schedule_bp
 from .week_days_routes import week_days_bp
@@ -14,6 +15,7 @@ def register_routes(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)
+    app.register_blueprint(employees_bp)
     app.register_blueprint(activities_bp)
     app.register_blueprint(schedule_bp)
     app.register_blueprint(sectors_bp)
