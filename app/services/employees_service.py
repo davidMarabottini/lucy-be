@@ -20,14 +20,16 @@ class EmployeeService(BaseService):
             existing = Employee.query.filter_by(libemax_id=lmx_id).first()
             if existing:
                 existing.name = lc.get("name") or existing.name
+                existing.surname = lc.get("surname") or existing.surname
                 existing.email = lc.get("email")
-                existing.phone = lc.get("contact", {}).get("mobile") if lc.get("contact") else existing.phone
+                existing.phone = lc.get("mobile") or lc.get("phone") or existing.phone
             else:
                 existing = Employee(
                     libemax_id=lmx_id,
                     name=lc.get("name", ""),
+                    surname=lc.get("surname", ""),
                     email=lc.get("email"),
-                    phone=lc.get("contact", {}).get("mobile") if lc.get("contact") else None,
+                    phone=lc.get("mobile") or lc.get("phone"),
                 )
                 db.session.add(existing)
             synced += 1
