@@ -167,7 +167,15 @@ def run_migrations():
             else:
                 upgrade()
 
-        messagebox.showinfo("Successo", "Migration applicate correttamente!")
+            app_db.session.remove()
+            app_db.engine.dispose()
+
+            if hasattr(temp_app, 'shutdown_func'):
+                temp_app.shutdown_func()
+                messagebox.showinfo("Successo", "Migration applicate e database salvato correttamente!")
+            else:
+                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
+
         logging.info("Migration Alembic applicate con successo.")
     except Exception as e:
         logging.error(f"Errore durante le migration: {e}")

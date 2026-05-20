@@ -42,7 +42,7 @@ def create_app(db_password: str = None, db_path=None):
 
     # Init estensioni
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate.init_app(app, db, render_as_batch=True)
 
     # Import locali e registrazione componenti
     from . import models  # noqa: F401
