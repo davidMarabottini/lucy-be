@@ -66,3 +66,21 @@ def sync_libemax_clients():
   except Exception as e:
     logging.error(f"Errore sincronizzazione clienti Libemax: {e}")
     messagebox.showerror("Errore", f"Sincronizzazione fallita: {e}")
+
+def sync_libemax_employees():
+  app = state.active_app
+
+  if not app:
+    messagebox.showerror("Errore", "Server non avviato")
+    return
+
+  try:
+    logging.info("Avvio sincronizzazione dipendenti da Libemax...")
+    with app.app_context():
+      from app.services.employees_service import EmployeeService
+      synced = EmployeeService.sync_from_libemax()
+      logging.info(f"Sincronizzazione completata: {synced} dipendenti sincronizzati.")
+      messagebox.showinfo("Successo", f"Dipendenti sincronizzati: {synced}")
+  except Exception as e:
+    logging.error(f"Errore sincronizzazione dipendenti Libemax: {e}")
+    messagebox.showerror("Errore", f"Sincronizzazione fallita: {e}")

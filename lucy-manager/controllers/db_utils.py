@@ -122,6 +122,8 @@ def generate_migration():
     if not message:
         return
 
+    temp_app = None
+    success = False
     try:
         temp_app = create_app(db_path=DB_PATH, db_password=password)
 
@@ -130,12 +132,25 @@ def generate_migration():
             stamp()
             generate(message=message)
 
-        messagebox.showinfo("Successo", "Migration generata in migrations/versions/")
+        success = True
         logging.info("Migration Alembic generata con successo.")
     except Exception as e:
         logging.error(f"Errore durante la generazione migration: {e}")
         messagebox.showerror("Errore", f"Impossibile generare la migration: {e}")
-        
+    finally:
+        if temp_app is not None:
+            if hasattr(temp_app, 'shutdown_func'):
+                try:
+                    temp_app.shutdown_func()
+                    if success:
+                        messagebox.showinfo("Successo", "Migration generata in migrations/versions/")
+                except Exception as e:
+                    logging.error(f"Errore durante lo shutdown/cifratura: {e}")
+                    messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
+            elif success:
+                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
+
+
 def run_migrations():
     """Applica le migration Alembic pendenti (solo DEV_MODE)"""
     if not os.path.exists(DB_PATH):
@@ -146,6 +161,8 @@ def run_migrations():
     if not password:
         return
 
+    temp_app = None
+    success = False
     try:
         temp_app = create_app(db_path=DB_PATH, db_password=password)
 
@@ -167,11 +184,25 @@ def run_migrations():
             else:
                 upgrade()
 
-        messagebox.showinfo("Successo", "Migration applicate correttamente!")
+        success = True
         logging.info("Migration Alembic applicate con successo.")
+
     except Exception as e:
         logging.error(f"Errore durante le migration: {e}")
         messagebox.showerror("Errore", f"Impossibile applicare le migration: {e}")
+
+    finally:
+        if temp_app is not None:
+            if hasattr(temp_app, 'shutdown_func'):
+                try:
+                    temp_app.shutdown_func()
+                    if success:
+                        messagebox.showinfo("Successo", "Migration applicate e database salvato correttamente!")
+                except Exception as e:
+                    logging.error(f"Errore durante lo shutdown/cifratura: {e}")
+                    messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
+            elif success:
+                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
 
 def initialize_db():
     if os.path.exists(DB_PATH):
@@ -180,39 +211,35 @@ def initialize_db():
 
     # Chiediamo la password per la PRIMA creazione
     password = simpledialog.askstring("Setup Iniziale", "Scegli una password per CRIPTARE il nuovo database:", show='*')
-    
+
     if not password:
         return
-    
+
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    
+
+    temp_app = None
+    success = False
+    result = None
     try:
         normalized_path = DB_PATH.replace('\\', '/')
-        
-        # 1. Creiamo un'istanza temporanea dell'app per attivare il driver SQLCipher
         temp_app = create_app(db_path=normalized_path, db_password=password)
-            
+
+        with temp_app.app_context():
+            result = temp_app.setup_database_func()
+
+        success = True
     except Exception as e:
         logging.error(f"Errore inizializzazione: {e}")
         messagebox.showerror("Errore Critico", f"Impossibile creare il database: {e}")
-
-    try:
-        # 2. Chiamiamo la funzione di creazione tabelle
-        with temp_app.app_context():
-            result = temp_app.setup_database_func()
-            from app import db 
-            
-            db.session.remove()
-            db.engine.dispose()
-            
+    finally:
+        if temp_app is not None:
             if hasattr(temp_app, 'shutdown_func'):
-                temp_app.shutdown_func()
-                messagebox.showinfo("Successo", f"{result}\n\nDatabase sigillato correttamente!")
-            
+                try:
+                    temp_app.shutdown_func()
+                    if success:
+                        messagebox.showinfo("Successo", f"{result}\n\nDatabase sigillato correttamente!")
+                except Exception as e:
+                    logging.error(f"Errore durante lo shutdown/cifratura: {e}")
+                    messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
             else:
                 messagebox.showerror("Errore", "Funzione shutdown_func non trovata.")
-            
-    
-    except Exception as e:
-        messagebox.showerror("Errore Cifratura", f"Tabelle create, ma errore nel salvataggio finale: {e}")
-    
