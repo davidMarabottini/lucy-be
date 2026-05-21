@@ -61,12 +61,8 @@ def main():
 
     if os.environ.get("DEV_MODE", "").lower() in ("1", "true"):
       create_section_label(sidebar, "SVILUPPATORE").pack(anchor="w", padx=10, pady=(15, 0))
-
-      create_sidebar_button(sidebar, "⚙️ Generate Migration",
-        db_utils.generate_migration).pack(fill="x", padx=10, pady=2)
-
-      create_sidebar_button(sidebar, "🔄 DB Migrate",
-        db_utils.run_migrations).pack(fill="x", padx=10, pady=2)
+      create_sidebar_button(sidebar, "⚙️ Generate Migration", db_utils.generate_migration).pack(fill="x", padx=10, pady=2)
+      create_sidebar_button(sidebar, "🔄 DB Migrate", db_utils.run_migrations).pack(fill="x", padx=10, pady=2)
 
     # ===== UTILITY =====
     create_section_label(sidebar, "UTILITY").pack(anchor="w", padx=10, pady=(15, 0))

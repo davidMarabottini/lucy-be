@@ -147,6 +147,9 @@ def generate_migration():
                 except Exception as e:
                     logging.error(f"Errore durante lo shutdown/cifratura: {e}")
                     messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
+            elif success:
+                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
+
 
 def run_migrations():
     """Applica le migration Alembic pendenti (solo DEV_MODE)"""
