@@ -43,3 +43,36 @@ def create_employee_contract():
 
     except ValueError:
         return jsonify({"error": "Formato data non valido."}), 400
+
+
+@employee_contracts_bp.route("/by-contract/<int:contract_id>", methods=["GET"])
+# @requires_auth
+def get_employees_by_contract(contract_id):
+    target_date = request.args.get("date")
+
+    try:
+        assignments = EmployeeContractService.get_employees_by_contract_and_date(
+            contract_id=contract_id,
+            target_date=target_date,
+        )
+    except ValueError:
+        return jsonify({"error": "Formato data non valido. Usa YYYY-MM-DD."}), 400
+
+    result = []
+    for a in assignments:
+        emp = a.employee
+        result.append({
+            "assignment_id": a.id,
+            "start_date": a.start_date.isoformat(),
+            "end_date": a.end_date.isoformat() if a.end_date else None,
+            "employee": {
+                "id": emp.id,
+                "name": emp.name,
+                "surname": emp.surname,
+                "email": emp.email,
+                "phone": emp.phone,
+                "libemax_id": emp.libemax_id,
+            },
+        })
+
+    return jsonify(result), 200
