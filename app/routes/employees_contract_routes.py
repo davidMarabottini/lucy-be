@@ -77,6 +77,70 @@ def get_employees_by_contract(contract_id):
 
     return jsonify(result), 200
 
+@employee_contracts_bp.route("/by-employee/<int:employee_id>", methods=["GET"])
+# @requires_auth
+def get_contracts_by_employee(employee_id):
+    target_date = request.args.get("date")
+
+    try:
+        assignments = EmployeeContractService.get_contracts_by_employee(
+            employee_id=employee_id,
+            target_date=target_date,
+        )
+    except ValueError:
+        return jsonify({"error": "Formato data non valido. Usa YYYY-MM-DD."}), 400
+
+    result = []
+    for a in assignments:
+        contract = a.contract
+        client = contract.client
+        schedules = contract.schedules.all()
+
+        result.append({
+            "assignment_id": a.id,
+            "assignment_start_date": a.start_date.isoformat(),
+            "assignment_end_date": a.end_date.isoformat() if a.end_date else None,
+            "contract": {
+                "id": contract.id,
+                "contract_code": contract.contract_code,
+                "start_date": contract.start_date.isoformat() if contract.start_date else None,
+                "end_date": contract.end_date.isoformat() if contract.end_date else None,
+                "description": contract.description,
+                "client": {
+                    "id": client.id,
+                    "name": client.name,
+                    "email": client.email,
+                    "phone": client.phone,
+                },
+                "work_schedules": [
+                    {
+                        "id": s.id,
+                        "note": s.note,
+                        "start_time": s.start_time.strftime("%H:%M") if s.start_time else None,
+                        "end_time": s.end_time.strftime("%H:%M") if s.end_time else None,
+                        "weekly_hours": s.weekly_hours,
+                        "schedule_type": {
+                            "id": s.schedule_type.id,
+                            "name": s.schedule_type.name,
+                            "icon_name": s.schedule_type.icon_name,
+                        } if s.schedule_type else None,
+                        "week_day": {
+                            "id": s.week_day.id,
+                            "name": s.week_day.name,
+                        } if s.week_day else None,
+                        "work_activity": {
+                            "id": s.work_activity.id,
+                            "name": s.work_activity.name,
+                        } if s.work_activity else None,
+                    }
+                    for s in schedules
+                ],
+            },
+        })
+
+    return jsonify(result), 200
+
+
 @employee_contracts_bp.route("/<int:assignment_id>", methods=["PATCH"])
 # @requires_auth
 def update_employee_contract(assignment_id):

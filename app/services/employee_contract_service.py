@@ -59,6 +59,27 @@ class EmployeeContractService(BaseService):
         return assignments
     
     @classmethod
+    def get_contracts_by_employee(cls, employee_id, target_date=None):
+        if target_date is None:
+            target_date = date.today()
+        elif isinstance(target_date, str):
+            target_date = cls._parse_date(target_date)
+
+        assignments = (
+            db.session.query(EmployeeContract)
+            .filter(
+                EmployeeContract.employee_id == employee_id,
+                EmployeeContract.start_date <= target_date,
+                db.or_(
+                    EmployeeContract.end_date == None,
+                    EmployeeContract.end_date >= target_date,
+                ),
+            )
+            .all()
+        )
+        return assignments
+
+    @classmethod
     def update(cls, assignment_id, data):
         payload = data.copy()
         if 'start_date' in payload:
