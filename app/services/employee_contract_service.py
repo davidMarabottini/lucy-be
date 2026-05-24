@@ -1,5 +1,5 @@
 from app.services.base_service import BaseService
-from app.models import EmployeeContract, Employee
+from app.models import Client, EmployeeContract, Employee
 from app import db
 from datetime import date, datetime
 
@@ -57,3 +57,12 @@ class EmployeeContractService(BaseService):
             .all()
         )
         return assignments
+    
+    @classmethod
+    def update(cls, assignment_id, data):
+        payload = data.copy()
+        if 'start_date' in payload:
+            payload['start_date'] = cls._parse_date(payload['start_date'])
+        if 'end_date' in payload:
+            payload['end_date'] = cls._parse_date(payload['end_date']) if payload['end_date'] else None
+        return super().update(assignment_id, payload)

@@ -14,7 +14,7 @@ class AuthService:
         #TODO: UTCNOW è deprecato, sostituire con datetime.now(timezone.utc) in futuro
         payload = {
             'user_id': user.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=4),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8),
             'iat': datetime.datetime.utcnow()
         }
         return jwt.encode(payload, AuthService.SECRET_KEY, algorithm='HS256')

@@ -76,3 +76,24 @@ def get_employees_by_contract(contract_id):
         })
 
     return jsonify(result), 200
+
+@employee_contracts_bp.route("/<int:assignment_id>", methods=["PATCH"])
+# @requires_auth
+def update_employee_contract(assignment_id):
+    data = request.get_json() or {}
+
+    if not data:
+        return jsonify({"error": "Nessun dato fornito."}), 400
+
+    for locked in ("id", "employee_id", "contract_id"):
+        data.pop(locked, None)
+
+    try:
+        assignment = EmployeeContractService.update(assignment_id, data)
+    except ValueError:
+        return jsonify({"error": "Formato data non valido."}), 400
+
+    if assignment is None:
+        return jsonify({"error": "Assegnazione non trovata."}), 404
+
+    return jsonify(_assignment_to_dict(assignment)), 200
