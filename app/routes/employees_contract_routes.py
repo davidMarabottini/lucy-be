@@ -39,6 +39,8 @@ def create_employee_contract():
         return jsonify([_assignment_to_dict(a) for a in assignments]), 201
 
     except IntegrityError:
+        from app import db
+        db.session.rollback()
         return jsonify({"error": "Assegnazione già esistente o ID (Employee/Contract) non valido."}), 400
 
     except ValueError:
