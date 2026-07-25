@@ -24,7 +24,7 @@ def get_contract(contract_id):
         "start_date": contract.start_date.isoformat() if contract.start_date else None,
         "end_date": contract.end_date.isoformat() if contract.end_date else None,
         # Restituiamo piccoli oggetti per le aziende
-        "provider": {
+        "provider_company": {
             "id": contract.provider_company.id,
             "name": contract.provider_company.name
         } if contract.provider_company else None,

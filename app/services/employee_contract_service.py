@@ -87,3 +87,17 @@ class EmployeeContractService(BaseService):
         if 'end_date' in payload:
             payload['end_date'] = cls._parse_date(payload['end_date']) if payload['end_date'] else None
         return super().update(assignment_id, payload)
+    
+    @classmethod
+    def get_all_employees_by_contract(cls, contract_id):
+        """
+        Ritorna tutte le assegnazioni storiche e attuali legate a un contratto,
+        comprensive di date di inizio e fine, senza filtri temporali giornalieri.
+        """
+        assignments = (
+            db.session.query(EmployeeContract)
+            .join(Employee, Employee.id == EmployeeContract.employee_id)
+            .filter(EmployeeContract.contract_id == contract_id)
+            .all()
+        )
+        return assignments

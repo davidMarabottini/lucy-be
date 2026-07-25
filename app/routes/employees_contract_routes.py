@@ -163,3 +163,41 @@ def update_employee_contract(assignment_id):
         return jsonify({"error": "Assegnazione non trovata."}), 404
 
     return jsonify(_assignment_to_dict(assignment)), 200
+
+@employee_contracts_bp.route("/get-all-by-contract/<int:contract_id>", methods=["GET"])
+# @requires_auth
+def get_all_employees_by_contract(contract_id):
+    target_date = request.args.get("date")
+
+    try:
+        if target_date:
+            # Comportamento A: mantiene il filtro giornaliero (usato per mappe/timbrature nei Clienti)
+            assignments = EmployeeContractService.get_employees_by_contract_and_date(
+                contract_id=contract_id,
+                target_date=target_date,
+            )
+        else:
+            # Comportamento B: chiama il nuovo metodo per recuperare l'anagrafica completa con date inizio/fine
+            assignments = EmployeeContractService.get_all_employees_by_contract(contract_id)
+            
+    except ValueError:
+        return jsonify({"error": "Formato data non valido. Usa YYYY-MM-DD."}), 400
+
+    result = []
+    for a in assignments:
+        emp = a.employee
+        result.append({
+            "assignment_id": a.id,
+            "start_date": a.start_date.isoformat(),  # Data inizio lavoratore su quel cliente/contratto
+            "end_date": a.end_date.isoformat() if a.end_date else None,  # Data fine lavoratore
+            "employee": {
+                "id": emp.id,
+                "name": emp.name,
+                "surname": emp.surname,
+                "email": emp.email,
+                "phone": emp.phone,
+                "libemax_id": emp.libemax_id,
+            },
+        })
+
+    return jsonify(result), 200
