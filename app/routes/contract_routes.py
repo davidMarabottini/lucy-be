@@ -42,6 +42,15 @@ def create_contract():
     contract = ContractService.create(data)
     return jsonify({"id": contract.id}), 201
 
+@contracts_bp.route("/<int:contract_id>", methods=["PUT"])
+# @requires_auth
+def update_contract(contract_id):
+    data = request.get_json()
+    contract, error = ContractService.update(contract_id, data)
+    if error:
+        return jsonify({"status": "error", "message": error}), 400
+    return jsonify({"status": "success", "message": "Contract updated"})
+
 @contracts_bp.route("/<int:contract_id>", methods=["DELETE"])
 # @requires_auth
 def delete_contract(contract_id):

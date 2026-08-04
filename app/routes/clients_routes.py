@@ -32,6 +32,22 @@ def create_client():
     client = ClientService.create(data)
     return jsonify({"id": client.id}), 201
 
+@clients_bp.route("/<int:client_id>", methods=["PUT"])
+# @requires_auth
+def update_client(client_id):
+    data = request.get_json()
+    client = ClientService.update(client_id, data)
+    
+    if not client:
+        return jsonify({"error": "Not found"}), 404
+
+    return jsonify({
+        "id": client.id,
+        "name": client.name,
+        "email": client.email,
+        "phone": client.phone
+    }), 200
+
 @clients_bp.route("/<int:client_id>", methods=["DELETE"])
 # @requires_auth
 def delete_client(client_id):

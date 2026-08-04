@@ -43,15 +43,16 @@ class UserService(BaseService):
 
     @classmethod
     def update(cls, user_id, data):
-        """Override: aggiornamento parziale con gestione errori, ritorna (user, error)."""
         user = db.session.get(User, user_id)
         if not user:
             return None, "Utente non trovato"
 
+        # Aggiorna solo i campi passati nel payload parziale
         if 'name' in data: user.name = data['name']
         if 'surname' in data: user.surname = data['surname']
         if 'gender' in data: user.gender = data['gender']
         if 'email' in data: user.email = data['email']
+        if 'username' in data: user.username = data['username']
 
         if 'password' in data and data['password']:
             user.set_password(data['password'])
@@ -61,4 +62,28 @@ class UserService(BaseService):
             return user, None
         except IntegrityError:
             db.session.rollback()
-            return None, "Email già occupata"
+            return None, "Username o Email già esistenti nel database"
+        except Exception as e:
+            db.session.rollback()
+            return None, str(e)
+    # @classmethod
+    # def update(cls, user_id, data):
+    #     """Override: aggiornamento parziale con gestione errori, ritorna (user, error)."""
+    #     user = db.session.get(User, user_id)
+    #     if not user:
+    #         return None, "Utente non trovato"
+
+    #     if 'name' in data: user.name = data['name']
+    #     if 'surname' in data: user.surname = data['surname']
+    #     if 'gender' in data: user.gender = data['gender']
+    #     if 'email' in data: user.email = data['email']
+
+    #     if 'password' in data and data['password']:
+    #         user.set_password(data['password'])
+
+    #     try:
+    #         db.session.commit()
+    #         return user, None
+    #     except IntegrityError:
+    #         db.session.rollback()
+    #         return None, "Email già occupata"
