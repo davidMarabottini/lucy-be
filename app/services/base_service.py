@@ -51,6 +51,42 @@ class BaseService:
         return entity
 
     @classmethod
+    def bulk_update(cls, items_data):
+        """
+        Aggiorna massivamente una lista di entità in un'unica transazione.
+        Ogni elemento in items_data deve contenere la chiave 'id'.
+        """
+        updated_ids = []
+
+        try:
+            for item in items_data:
+                entity_id = item.get('id')
+                if not entity_id:
+                    raise ValueError("Ogni elemento del payload deve contenere il campo 'id'")
+
+                entity = db.session.get(cls.model, entity_id)
+                if not entity:
+                    raise ValueError(f"Risorsa {cls.model.__name__} con ID {entity_id} non trovata")
+
+                cls._apply_updates(entity, item)
+                updated_ids.append(entity.id)
+
+            db.session.commit()
+
+            if cls.query_options:
+                return (
+                    cls.model.query.filter(cls.model.id.in_(updated_ids))
+                    .options(*cls.query_options)
+                    .all()
+                )
+
+            return [db.session.get(cls.model, eid) for eid in updated_ids]
+
+        except Exception as e:
+            db.session.rollback()
+            raise e
+
+    @classmethod
     def delete(cls, entity_id):
         entity = db.session.get(cls.model, entity_id)
         if not entity:

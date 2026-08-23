@@ -1,8 +1,7 @@
 from app.services.base_service import BaseService
-from app.models import db, WorkSchedule, Contract
+from app.models import db, WorkSchedule, Contract, WeekDay
 from sqlalchemy.orm import joinedload
 from datetime import datetime
-
 
 class WorkScheduleService(BaseService):
     model = WorkSchedule
@@ -13,6 +12,16 @@ class WorkScheduleService(BaseService):
         joinedload(WorkSchedule.contract).joinedload(Contract.client)
     ]
 
+    DAYS_MAP = {
+        'monday': 'Monday',
+        'tuesday': 'Tuesday',
+        'wednesday': 'Wednesday',
+        'thursday': 'Thursday',
+        'friday': 'Friday',
+        'saturday': 'Saturday',
+        'sunday': 'Sunday'
+    }
+    
     @classmethod
     def get_by_contract(cls, contract_id):
         query = WorkSchedule.query.filter_by(contract_id=contract_id)
@@ -22,7 +31,18 @@ class WorkScheduleService(BaseService):
 
     @classmethod
     def create(cls, data):
-        # 1. Pulizia stringhe vuote e conversione tipi base
+        processed = cls._process_data(data)
+        return super().create(processed)
+
+    @classmethod
+    def _apply_updates(cls, entity, data):
+        """Override del metodo di BaseService per processare i dati prima di applicarli."""
+        processed = cls._process_data(data)
+        super()._apply_updates(entity, processed)
+
+    @classmethod
+    def _process_data(cls, data):
+        """Sanifica i dati in ingresso, convertendo tipi orario, float e int."""
         processed_data = {}
         for key, value in data.items():
             if value == "":
@@ -30,35 +50,74 @@ class WorkScheduleService(BaseService):
             else:
                 processed_data[key] = value
 
-        # 2. Conversione specifica per i campi Time
+        # Conversione campi Time
         time_fields = ['start_time', 'end_time']
         for field in time_fields:
             if processed_data.get(field):
                 try:
-                    time_str = processed_data[field]
+                    time_str = str(processed_data[field])
                     processed_data[field] = datetime.strptime(time_str[:5], "%H:%M").time()
                 except ValueError:
                     processed_data[field] = None
 
-        # 3. Conversione tipi numerici (se arrivano come stringhe dal form)
-        if processed_data.get('weekly_hours'):
-            processed_data['weekly_hours'] = float(processed_data['weekly_hours'])
-        if processed_data.get('schedule_type_id'):
-            processed_data['schedule_type_id'] = int(processed_data['schedule_type_id'])
+        # Conversione tipi numerici
+        if processed_data.get('weekly_hours') is not None:
+            try:
+                processed_data['weekly_hours'] = float(processed_data['weekly_hours'])
+            except (ValueError, TypeError):
+                pass
 
-        # 4. Creazione record
-        new_schedule = WorkSchedule(**processed_data)
-        db.session.add(new_schedule)
-        db.session.commit()
-        return new_schedule
+        if processed_data.get('schedule_type_id') is not None:
+            try:
+                processed_data['schedule_type_id'] = int(processed_data['schedule_type_id'])
+            except (ValueError, TypeError):
+                pass
+
+        return processed_data
 
     @classmethod
-    def update(cls, schedule_id, data):
-        schedule = db.session.get(WorkSchedule, schedule_id)
-        if not schedule:
-            return None
-        for key, value in data.items():
-            if hasattr(schedule, key):
-                setattr(schedule, key, value)
-        db.session.commit()
-        return cls.get_by_id(schedule_id)
+    def sync_contract_schedules(cls, contract_id, payload):
+        schedule_type_id = payload.get('schedule_type_id')
+        note = payload.get('note')
+        weekly_hours = payload.get('weekly_hours')
+        schedules = payload.get('schedules', [])
+
+        if not contract_id or not schedule_type_id:
+            raise ValueError("contract_id e schedule_type_id sono obbligatori")
+
+        week_days_db = {wd.name.lower(): wd.id for wd in WeekDay.query.all()}
+
+        try:
+            # Rimuove i vecchi orari associati al contratto
+            WorkSchedule.query.filter_by(contract_id=contract_id).delete()
+
+            # Crea i nuovi record
+            for item in schedules:
+                day_name = str(item.get('day', '')).lower()
+                week_day_id = week_days_db.get(day_name)
+                start_str = item.get('startTime')
+                end_str = item.get('endTime')
+
+                if not week_day_id or not start_str or not end_str:
+                    continue
+
+                start_time = datetime.strptime(start_str[:5], "%H:%M").time()
+                end_time = datetime.strptime(end_str[:5], "%H:%M").time()
+
+                new_schedule = WorkSchedule(
+                    contract_id=contract_id,
+                    schedule_type_id=schedule_type_id,
+                    week_day_id=week_day_id,
+                    start_time=start_time,
+                    end_time=end_time,
+                    note=note,
+                    weekly_hours=weekly_hours
+                )
+                db.session.add(new_schedule)
+
+            db.session.commit()
+            return WorkSchedule.query.filter_by(contract_id=contract_id).all()
+
+        except Exception as e:
+            db.session.rollback()
+            raise e

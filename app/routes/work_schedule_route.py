@@ -51,3 +51,33 @@ def delete(id):
     if WorkScheduleService.delete(id):
         return jsonify({"message": "Eliminato con successo"}), 200
     return jsonify({"message": "Orario non trovato"}), 404
+
+@schedule_bp.route('/bulk-update', methods=['PUT'])
+# @requires_auth
+def bulk_update():
+    try:
+        data = request.json
+        if not isinstance(data, list):
+            return jsonify({"message": "Payload non valido: atteso un array di elementi"}), 400
+            
+        updated_schedules = WorkScheduleService.bulk_update(data)
+        return jsonify([s.to_dict() for s in updated_schedules]), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
+
+@schedule_bp.route('/contract/<int:contract_id>/sync', methods=['POST', 'PUT'])
+# @requires_auth
+def sync_schedules(contract_id):
+    try:
+        data = request.get_json(silent=True) or {}
+        
+        if not isinstance(data, dict):
+            return jsonify({"message": "Payload non valido: atteso un oggetto JSON"}), 400
+
+        updated_schedules = WorkScheduleService.sync_contract_schedules(
+            contract_id=contract_id,
+            payload=data
+        )
+        return jsonify([s.to_dict() for s in updated_schedules]), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
