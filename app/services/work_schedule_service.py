@@ -1,5 +1,7 @@
+from typing import Any, Dict, List
+
 from app.services.base_service import BaseService
-from app.models import db, WorkSchedule, Contract, WeekDay
+from app.models import db, WorkSchedule, WorkScheduleType, Contract, WeekDay
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
@@ -9,19 +11,9 @@ class WorkScheduleService(BaseService):
         joinedload(WorkSchedule.schedule_type),
         joinedload(WorkSchedule.week_day),
         joinedload(WorkSchedule.work_activity),
-        joinedload(WorkSchedule.contract).joinedload(Contract.client)
+        # joinedload(WorkSchedule.contract).joinedload(Contract.client)
     ]
 
-    DAYS_MAP = {
-        'monday': 'Monday',
-        'tuesday': 'Tuesday',
-        'wednesday': 'Wednesday',
-        'thursday': 'Thursday',
-        'friday': 'Friday',
-        'saturday': 'Saturday',
-        'sunday': 'Sunday'
-    }
-    
     @classmethod
     def get_by_contract(cls, contract_id):
         query = WorkSchedule.query.filter_by(contract_id=contract_id)
@@ -75,48 +67,101 @@ class WorkScheduleService(BaseService):
 
         return processed_data
 
-    @classmethod
-    def sync_contract_schedules(cls, contract_id, payload):
-        schedule_type_id = payload.get('schedule_type_id')
-        note = payload.get('note')
-        weekly_hours = payload.get('weekly_hours')
-        schedules = payload.get('schedules', [])
 
-        if not contract_id or not schedule_type_id:
-            raise ValueError("contract_id e schedule_type_id sono obbligatori")
+    def sync_contract_schedules(contract_id: int, payload: Dict[str, Any]) -> List[WorkSchedule]:
+        DAY_NAME_MAP = {
+            "monday": "Lunedì",
+            "tuesday": "Martedì",
+            "wednesday": "Mercoledì",
+            "thursday": "Giovedì",
+            "friday": "Venerdì",
+            "saturday": "Sabato",
+            "sunday": "Domenica"
+        }
+        # 1. Validazione di coerenza contract_id
+        payload_contract_id = payload.get("contract_id")
+        if payload_contract_id is not None and int(payload_contract_id) != contract_id:
+            raise ValueError(f"Incoerenza contract_id: URL ({contract_id}) != Body ({payload_contract_id})")
 
-        week_days_db = {wd.name.lower(): wd.id for wd in WeekDay.query.all()}
+        contract = Contract.query.get(contract_id)
+        if not contract:
+            raise ValueError(f"Contratto con ID {contract_id} non trovato")
 
         try:
-            # Rimuove i vecchi orari associati al contratto
+            # 2. Cancelliamo i vecchi orari associati al contratto
             WorkSchedule.query.filter_by(contract_id=contract_id).delete()
 
-            # Crea i nuovi record
-            for item in schedules:
-                day_name = str(item.get('day', '')).lower()
-                week_day_id = week_days_db.get(day_name)
-                start_str = item.get('startTime')
-                end_str = item.get('endTime')
+            new_schedules = []
+            schedule_types = WorkScheduleType.query.all()
+            fixed_schedule_types = [schedule_type for schedule_type in schedule_types if schedule_type.period == 'FIXED']
+            flexible_schedule_types = {
+                schedule_type.name.strip().lower(): schedule_type
+                for schedule_type in schedule_types
+                if schedule_type.period != 'FIXED'
+            }
 
-                if not week_day_id or not start_str or not end_str:
+            # 3. Orari FIXED: ogni fascia viene associata a tutti i tipi FIXED configurati.
+            schedules_data = payload.get("schedules", [])
+            if not isinstance(schedules_data, list):
+                raise ValueError("Il campo 'schedules' deve essere una lista")
+
+            # Cache dei giorni della settimana per velocizzare le query
+            week_days_by_name = {wd.name.lower(): wd.id for wd in WeekDay.query.all()}
+
+            for item in schedules_data:
+                day_raw = item.get("day", "").lower()
+                db_day_name = DAY_NAME_MAP.get(day_raw, day_raw)
+                week_day_id = week_days_by_name.get(day_raw) or week_days_by_name.get(db_day_name.lower())
+
+                if not week_day_id:
+                    raise ValueError(f"Giorno della settimana non valido: {day_raw}")
+
+                start_time_obj = datetime.strptime(item["startTime"], "%H:%M").time() if item.get("startTime") else None
+                end_time_obj = datetime.strptime(item["endTime"], "%H:%M").time() if item.get("endTime") else None
+
+                for schedule_type in fixed_schedule_types:
+                    schedule = WorkSchedule(
+                        contract_id=contract_id,
+                        schedule_type_id=schedule_type.id,
+                        week_day_id=week_day_id,
+                        start_time=start_time_obj,
+                        end_time=end_time_obj,
+                        weekly_hours=None
+                    )
+                    db.session.add(schedule)
+                    new_schedules.append(schedule)
+
+            # 4. Orari flessibili: le chiavi dipendono dai nomi dei tipi configurati.
+            flexible_data = payload.get("flexible", {})
+            if not isinstance(flexible_data, dict):
+                raise ValueError("Il campo 'flexible' deve essere un oggetto")
+
+            for type_name, raw_hours in flexible_data.items():
+                if raw_hours in (None, ""):
                     continue
 
-                start_time = datetime.strptime(start_str[:5], "%H:%M").time()
-                end_time = datetime.strptime(end_str[:5], "%H:%M").time()
+                schedule_type = flexible_schedule_types.get(str(type_name).strip().lower())
+                if not schedule_type:
+                    raise ValueError(f"Tipo di orario flessibile non valido: {type_name}")
 
-                new_schedule = WorkSchedule(
+                try:
+                    weekly_hours = float(raw_hours)
+                except (ValueError, TypeError):
+                    raise ValueError(f"Il valore di '{type_name}' in flexible deve essere numerico")
+
+                schedule = WorkSchedule(
                     contract_id=contract_id,
-                    schedule_type_id=schedule_type_id,
-                    week_day_id=week_day_id,
-                    start_time=start_time,
-                    end_time=end_time,
-                    note=note,
+                    schedule_type_id=schedule_type.id,
+                    week_day_id=None,
+                    start_time=None,
+                    end_time=None,
                     weekly_hours=weekly_hours
                 )
-                db.session.add(new_schedule)
+                db.session.add(schedule)
+                new_schedules.append(schedule)
 
             db.session.commit()
-            return WorkSchedule.query.filter_by(contract_id=contract_id).all()
+            return new_schedules
 
         except Exception as e:
             db.session.rollback()
