@@ -33,11 +33,28 @@ def create_employee():
     employee = EmployeeService.create(data)
     return jsonify({"id": employee.id}), 201
 
+@employees_bp.route("/<int:employee_id>", methods=["PUT"])
+# @requires_auth
+def update_employee(employee_id):
+    data = request.get_json()
+    employee = EmployeeService.update(employee_id, data)
+    if not employee:
+        return jsonify({"status": "error", "message": "Dipendente non trovato"}), 404
+    return jsonify({
+        "id": employee.id,
+        "name": employee.name,
+        "surname": employee.surname,
+        "email": employee.email,
+        "phone": employee.phone
+    })
+
 @employees_bp.route("/<int:employee_id>", methods=["DELETE"])
 # @requires_auth
 def delete_employee(employee_id):
     isDeleted = EmployeeService.delete(employee_id)
-    return jsonify({"success": isDeleted})
+    if not isDeleted:
+        return jsonify({"status": "error", "message": "Dipendente non trovato"}), 404
+    return jsonify({"status": "success", "message": "Dipendente eliminato"})
 
 
 @employees_bp.route("/sync-libemax", methods=["POST"])
