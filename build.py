@@ -1,14 +1,13 @@
 import PyInstaller.__main__
 
 PyInstaller.__main__.run([
-    'desktop.py',
+    'lucy-manager/__main__.py',
     '--onedir',
     '--windowed',
-    '--name=LucyDesktop',
+    '--name=Lucy',
+    '--paths=.',
     '--add-data=app/static;app/static',
-    '--add-data=models;models',
     '--add-data=migrations;migrations',
-    # '--add-data=manager.html;.',
     '--hidden-import=app',
     '--hidden-import=flask',
     '--hidden-import=sqlalchemy',
