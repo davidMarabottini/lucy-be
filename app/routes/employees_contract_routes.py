@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.employee_contract_service import EmployeeContractService
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 employee_contracts_bp = Blueprint("employee_contracts", __name__, url_prefix="/api/employee-contracts")
 
@@ -163,6 +163,58 @@ def update_employee_contract(assignment_id):
         return jsonify({"error": "Assegnazione non trovata."}), 404
 
     return jsonify(_assignment_to_dict(assignment)), 200
+
+@employee_contracts_bp.route("/sync", methods=["POST"])
+# @requires_auth
+def sync_employee_contracts():
+    data = request.get_json() or {}
+
+    required_fields = ["contract_id", "assignments"]
+    missing = [field for field in required_fields if field not in data]
+    if missing:
+        return jsonify({"error": f"Campi obbligatori mancanti: {', '.join(missing)}"}), 400
+
+    assignments_payload = data["assignments"]
+    if not isinstance(assignments_payload, list):
+        return jsonify({"error": "'assignments' deve essere una lista."}), 400
+
+    for item in assignments_payload:
+        if "employee_id" not in item or "start_date" not in item:
+            return jsonify({"error": "Ogni assegnazione deve contenere 'employee_id' e 'start_date'."}), 400
+
+    try:
+        assignments = EmployeeContractService.sync_by_contract(
+            contract_id=data["contract_id"],
+            assignments=assignments_payload,
+        )
+    except IntegrityError:
+        from app import db
+        db.session.rollback()
+        return jsonify({"error": "Assegnazione già esistente o ID (Employee/Contract) non valido."}), 400
+    except ValueError:
+        return jsonify({"error": "Formato data non valido."}), 400
+    except SQLAlchemyError:
+        return jsonify({"error": "Errore durante la sincronizzazione delle assegnazioni."}), 500
+
+    result = []
+    for a in assignments:
+        emp = a.employee
+        result.append({
+            "id": a.id,
+            "contract_id": a.contract_id,
+            "employee_id": a.employee_id,
+            "start_date": a.start_date.isoformat(),
+            "end_date": a.end_date.isoformat() if a.end_date else None,
+            "employee": {
+                "id": emp.id,
+                "name": emp.name,
+                "surname": emp.surname,
+                "email": emp.email,
+            },
+        })
+
+    return jsonify(result), 200
+
 
 @employee_contracts_bp.route("/get-all-by-contract/<int:contract_id>", methods=["GET"])
 # @requires_auth

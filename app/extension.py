@@ -42,4 +42,4 @@ class BaseModel:
 
 
 db = SQLAlchemy(model_class=BaseModel)
-migrate = Migrate()
+migrate = Migrate(render_as_batch=True)

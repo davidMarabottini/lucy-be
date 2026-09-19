@@ -1,6 +1,8 @@
+from sqlalchemy.exc import SQLAlchemyError
 from app.services.base_service import BaseService
-from app.models import Client, EmployeeContract, Employee
+from app.models import EmployeeContract, Employee
 from app import db
+from typing import Any, Dict, List
 from datetime import date, datetime
 
 class EmployeeContractService(BaseService):
@@ -44,15 +46,15 @@ class EmployeeContractService(BaseService):
             target_date = cls._parse_date(target_date)
 
         assignments = (
-            db.session.query(EmployeeContract)
+            EmployeeContract.query
             .join(Employee, Employee.id == EmployeeContract.employee_id)
             .filter(
                 EmployeeContract.contract_id == contract_id,
-                EmployeeContract.start_date <= target_date,
-                db.or_(
-                    EmployeeContract.end_date == None,
-                    EmployeeContract.end_date >= target_date,
-                ),
+                # EmployeeContract.start_date <= target_date,
+                # db.or_(
+                #     EmployeeContract.end_date == None,
+                #     EmployeeContract.end_date >= target_date,
+                # ),
             )
             .all()
         )
@@ -66,7 +68,7 @@ class EmployeeContractService(BaseService):
             target_date = cls._parse_date(target_date)
 
         assignments = (
-            db.session.query(EmployeeContract)
+            EmployeeContract.query
             .filter(
                 EmployeeContract.employee_id == employee_id,
                 EmployeeContract.start_date <= target_date,
@@ -95,9 +97,58 @@ class EmployeeContractService(BaseService):
         comprensive di date di inizio e fine, senza filtri temporali giornalieri.
         """
         assignments = (
-            db.session.query(EmployeeContract)
+            EmployeeContract.query
             .join(Employee, Employee.id == EmployeeContract.employee_id)
             .filter(EmployeeContract.contract_id == contract_id)
             .all()
         )
         return assignments
+
+    @classmethod
+    def sync_by_contract(cls, contract_id: int, assignments: List[Dict[str, Any]]) -> List[EmployeeContract]:
+        contract_id = int(contract_id)
+        
+        try:
+            existing_entities = EmployeeContract.query.filter_by(contract_id=contract_id).all()
+            existing = {a.employee_id: a for a in existing_entities}
+            incoming_employee_ids = set()
+
+            for item in assignments:
+                employee_id = int(item['employee_id'])
+                if employee_id in incoming_employee_ids:
+                    continue
+                incoming_employee_ids.add(employee_id)
+
+                raw_start = item.get('start_date')
+                raw_end = item.get('end_date')
+
+                start_date = datetime.fromisoformat(raw_start.replace('Z', '+00:00')).date() if isinstance(raw_start, str) else raw_start
+                end_date = datetime.fromisoformat(raw_end.replace('Z', '+00:00')).date() if isinstance(raw_end, str) and raw_end else None
+
+                entity = existing.get(employee_id)
+                if entity:
+                    entity.start_date = start_date
+                    entity.end_date = end_date
+                else:
+                    # BUG RISOLTO QUI: Forzatura esplicita dell'ID o stato di sessione per i nuovi record
+                    entity = EmployeeContract(
+                        contract_id=contract_id,
+                        employee_id=employee_id,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+                    db.session.add(entity)
+
+            for employee_id, entity in existing.items():
+                if employee_id not in incoming_employee_ids:
+                    db.session.delete(entity)
+
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+            raise
+
+        db.session.expire_all()
+        return EmployeeContract.query.filter_by(contract_id=contract_id).all()
+ 

@@ -150,7 +150,7 @@ class WorkSchedule(db.Model):
             data['end_time'] = self.end_time.strftime("%H:%M")
             
         return data
-    
+
 class Employee(db.Model):
     __tablename__ = 'employees'
     id = db.Column(db.Integer, primary_key=True)
@@ -171,8 +171,5 @@ class EmployeeContract(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=True)
 
-    __table_args__ = (
-        db.UniqueConstraint('employee_id', 'contract_id', name='unique_employee_contract'),
-    )
 
     contract = db.relationship('Contract', backref=db.backref('employee_assignments', lazy='dynamic'))

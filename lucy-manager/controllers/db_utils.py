@@ -128,8 +128,8 @@ def generate_migration():
         temp_app = create_app(db_path=DB_PATH, db_password=password)
 
         with temp_app.app_context():
-            from flask_migrate import migrate as generate, stamp
-            stamp()
+            from flask_migrate import migrate as generate # , stamp
+            # stamp()
             generate(message=message)
 
         success = True
