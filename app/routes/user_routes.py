@@ -6,18 +6,31 @@ from ..auth.decorators import requires_auth
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
+from flask import jsonify, Response
+from typing import Tuple, Dict, Any
+
+from flask import jsonify, Response
+from typing import Tuple, Dict, Any
+
 @users_bp.route('', methods=['GET'])
-# @requires_auth
-def list_users():
-    users = UserService.get_all()
-    return jsonify([{
-        "id": u.id,
-        "username": u.username,
-        "email": u.email,
-        "name": u.name,
-        "surname": u.surname,
-        "roles": [r.name for r in u.roles]
-    } for u in users])
+def list_users() -> Tuple[Response, int]:
+    paginated_data: Dict[str, Any] = UserService.get_all()
+    
+    user_list_refined = [{
+        "id": u.get("id"),
+        "username": u.get("username"),
+        "email": u.get("email"),
+        "name": u.get("name"),
+        "surname": u.get("surname"),
+        "roles": u.get("roles", []) 
+    } for u in paginated_data.get("items", [])]
+    
+    response_payload = {
+        **paginated_data, 
+        "items": user_list_refined
+    }
+    
+    return jsonify(response_payload), 200
 
 @users_bp.route('', methods=['POST'])
 def add_user():

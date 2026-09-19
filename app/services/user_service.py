@@ -6,10 +6,10 @@ from sqlalchemy.exc import IntegrityError
 class UserService(BaseService):
     model = User
 
-    @classmethod
-    def get_all(cls):
-        """Override: ritorna tutti gli utenti senza paginazione."""
-        return cls.model.query.all()
+    # @classmethod
+    # def get_all(cls):
+    #     """Override: ritorna tutti gli utenti senza paginazione."""
+    #     return cls.model.query.all()
 
     @classmethod
     def create(cls, data):
