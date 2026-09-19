@@ -77,7 +77,7 @@ def open_web_app():
     if not state.server_thread or not state.server_thread.is_alive():
         messagebox.showerror("Errore", "Avvia prima il server")
         return
-    webbrowser.open("http://127.0.0.1:5000/")
+    webbrowser.open("http://localhost:5000/")
   
 def open_app():
     if not state.server_thread or not state.server_thread.is_alive():
@@ -85,6 +85,6 @@ def open_app():
         return
 
     logging.info("Apertura finestra WebView...")
-    url = "http://127.0.0.1:5000/"
+    url = "http://localhost:5000/"
     webview.create_window("Lucy Desktop", url, width=1200, height=800)
     webview.start()
