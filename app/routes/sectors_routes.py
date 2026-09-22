@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..services.sector_service import SectorService
+from ..utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 sectors_bp = Blueprint('sectors_bp', __name__, url_prefix="/api/sectors")
@@ -9,6 +10,14 @@ sectors_bp = Blueprint('sectors_bp', __name__, url_prefix="/api/sectors")
 def get_sectors():
     sectors = SectorService.get_all()
     return jsonify(sectors), 200
+
+@sectors_bp.route('/export', methods=['GET'])
+# @requires_auth
+def export_sectors():
+    try:
+        return SectorService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @sectors_bp.route('/<int:sector_id>', methods=['GET'])
 # @requires_auth

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.client_service import ClientService
+from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 clients_bp = Blueprint("clients", __name__, url_prefix="/api/clients")
@@ -9,6 +10,15 @@ clients_bp = Blueprint("clients", __name__, url_prefix="/api/clients")
 def list_clients():
     clients = ClientService.get_all()
     return jsonify(clients), 200
+
+
+@clients_bp.route("/export", methods=["GET"])
+# @requires_auth
+def export_clients():
+    try:
+        return ClientService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @clients_bp.route("/<int:client_id>", methods=["GET"])

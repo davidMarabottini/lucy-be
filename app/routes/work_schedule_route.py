@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..services.work_schedule_service import WorkScheduleService
+from ..utils.exporters import resolve_export_format
 from app.auth.decorators import requires_auth
 
 schedule_bp = Blueprint('work_schedules', __name__, url_prefix='/api/work-schedules')
@@ -9,6 +10,14 @@ schedule_bp = Blueprint('work_schedules', __name__, url_prefix='/api/work-schedu
 def get_work_schedules():
     schedules = WorkScheduleService.get_all()
     return jsonify(schedules), 200
+
+@schedule_bp.route('/export', methods=['GET'])
+# @requires_auth
+def export_work_schedules():
+    try:
+        return WorkScheduleService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"message": str(e)}), 400
 
 @schedule_bp.route('/<int:id>', methods=['GET'])
 # @requires_auth

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.employee_contract_service import EmployeeContractService
+from app.utils.exporters import resolve_export_format
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 employee_contracts_bp = Blueprint("employee_contracts", __name__, url_prefix="/api/employee-contracts")
@@ -13,6 +14,15 @@ def _assignment_to_dict(a):
         "start_date": a.start_date.isoformat(),
         "end_date": a.end_date.isoformat() if a.end_date else None,
     }
+
+
+@employee_contracts_bp.route("/export", methods=["GET"])
+# @requires_auth
+def export_employee_contracts():
+    try:
+        return EmployeeContractService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @employee_contracts_bp.route("", methods=["POST"])

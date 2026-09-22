@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.work_activity_service import WorkActivityService
+from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 activities_bp = Blueprint("activities", __name__, url_prefix="/api/activities")
@@ -11,6 +12,14 @@ def list_activities():
     activities = WorkActivityService.get_all()
     # Usa to_dict() che abbiamo aggiunto nel modello
     return jsonify(activities)
+
+@activities_bp.route("/export", methods=["GET"])
+# @requires_auth
+def export_activities():
+    try:
+        return WorkActivityService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @activities_bp.route("", methods=["POST"])
 # @requires_auth

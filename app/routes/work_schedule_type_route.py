@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..services.work_schedule_type_service import WorkScheduleTypeService
+from ..utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 wst_bp = Blueprint('work_schedule_types', __name__, url_prefix="/api/work-schedule-types")
@@ -9,6 +10,14 @@ wst_bp = Blueprint('work_schedule_types', __name__, url_prefix="/api/work-schedu
 def get_types():
     types = WorkScheduleTypeService.get_all()
     return jsonify(types), 200
+
+@wst_bp.route('/export', methods=['GET'])
+# @requires_auth
+def export_types():
+    try:
+        return WorkScheduleTypeService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @wst_bp.route('/<int:wst_id>', methods=['GET'])
 # @requires_auth

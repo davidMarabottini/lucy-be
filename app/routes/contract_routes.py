@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.contract_service import ContractService
+from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 contracts_bp = Blueprint("contracts", __name__, url_prefix="/api/contracts")
@@ -9,6 +10,14 @@ contracts_bp = Blueprint("contracts", __name__, url_prefix="/api/contracts")
 def list_contracts():
     contracts = ContractService.get_all()
     return jsonify(contracts), 200
+
+@contracts_bp.route("/export", methods=["GET"])
+# @requires_auth
+def export_contracts():
+    try:
+        return ContractService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @contracts_bp.route("/<int:contract_id>", methods=["GET"])
 # @requires_auth

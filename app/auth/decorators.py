@@ -28,34 +28,42 @@ def requires_auth(f):
 from functools import wraps
 from flask import request, jsonify
 from sqlalchemy import inspect, String, Text
+from sqlalchemy.orm import Query
+
+
+def apply_query_filters(query: Query, model, ignored_params: set[str] = frozenset({'page', 'per_page', 'raw', 'format'})) -> Query:
+    """Applica alla query i filtri dinamici basati sulla Query String (?name=Libemax)."""
+    mapper = inspect(model)
+    # Prendiamo solo le colonne reali (escludendo le relazioni per i filtri URL)
+    columns = [c.key for c in mapper.column_attrs]
+
+    for key, value in request.args.items():
+        if key in ignored_params or not value:
+            continue
+
+        if key in columns:
+            column_attr = getattr(model, key)
+
+            # Ricerca parziale per stringhe, esatta per il resto (ID, numeri, ecc.)
+            if isinstance(column_attr.type, (String, Text)):
+                query = query.filter(column_attr.ilike(f"%{value}%"))
+            else:
+                query = query.filter(column_attr == value)
+
+    return query
+
 
 def paginated_response(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # 1. Ottieni la query base dal Service
         query = func(*args, **kwargs)
-        
-        # 2. Identifica il modello per automatizzare i filtri
+
+        # 2. Identifica il modello e applica i filtri dinamici
         model = query.column_descriptions[0]['entity']
-        mapper = inspect(model)
-        # Prendiamo solo le colonne reali (escludendo le relazioni per i filtri URL)
-        columns = [c.key for c in mapper.column_attrs]
+        query = apply_query_filters(query, model)
 
-        # 3. Filtri dinamici basati sulla Query String (?name=Libemax)
-        for key, value in request.args.items():
-            if key in ['page', 'per_page', 'raw'] or not value:
-                continue
-            
-            if key in columns:
-                column_attr = getattr(model, key)
-                
-                # Ricerca parziale per stringhe, esatta per il resto (ID, numeri, ecc.)
-                if isinstance(column_attr.type, (String, Text)):
-                    query = query.filter(column_attr.ilike(f"%{value}%"))
-                else:
-                    query = query.filter(column_attr == value)
-
-        # 4. Parametri di paginazione
+        # 3. Parametri di paginazione
         page = request.args.get('page', type=int)
         per_page = request.args.get('per_page', default=10, type=int)
         raw = request.args.get('raw', default='false').lower() == 'true'

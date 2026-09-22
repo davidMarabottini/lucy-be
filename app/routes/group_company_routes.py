@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from ..services.group_company_service import GroupCompanyService
+from ..utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 group_company_bp = Blueprint('group_company_bp', __name__, url_prefix="/api/group-company")
@@ -12,6 +13,14 @@ def get_companies():
     print(companies)
     return jsonify(companies), 200
     # return jsonify([c.to_dict() for c in companies]), 200
+
+@group_company_bp.route('/export', methods=['GET'])
+# @requires_auth
+def export_companies():
+    try:
+        return GroupCompanyService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 @group_company_bp.route('/<int:company_id>', methods=['GET'])
 # @requires_auth

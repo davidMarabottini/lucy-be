@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.services.employees_service import EmployeeService
+from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 employees_bp = Blueprint("employees", __name__, url_prefix="/api/employees")
@@ -9,6 +10,14 @@ employees_bp = Blueprint("employees", __name__, url_prefix="/api/employees")
 def list_employees():
     employees = EmployeeService.get_all()
     return jsonify(employees), 200
+
+@employees_bp.route("/export", methods=["GET"])
+# @requires_auth
+def export_employees():
+    try:
+        return EmployeeService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 
 @employees_bp.route("/<int:employee_id>", methods=["GET"])

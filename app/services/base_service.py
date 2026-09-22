@@ -1,6 +1,12 @@
+from typing import Optional
+
+from flask import Response
 from sqlalchemy import inspect
+from sqlalchemy.orm import Query
+
 from app.extension import db
-from app.auth.decorators import paginated_response
+from app.auth.decorators import apply_query_filters, paginated_response
+from app.utils.exporters import ExportFormat, export_records
 
 
 class BaseService:
@@ -13,6 +19,8 @@ class BaseService:
     """
     model = None
     query_options = []
+    # Colonne da escludere sempre dall'export (es. campi sensibili come password hash)
+    export_exclude_fields: list[str] = []
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -20,12 +28,36 @@ class BaseService:
             raise TypeError(f"{cls.__name__} deve definire 'model'")
 
     @classmethod
-    @paginated_response
-    def get_all(cls):
+    def _base_query(cls) -> Query:
         query = cls.model.query
         if cls.query_options:
             query = query.options(*cls.query_options)
         return query
+
+    @classmethod
+    @paginated_response
+    def get_all(cls) -> Query:
+        return cls._base_query()
+
+    @classmethod
+    def export(cls, fmt: ExportFormat = ExportFormat.XLSX, filename: Optional[str] = None) -> Response:
+        """
+        Esporta il risultato di get_all (con gli stessi filtri da query string) nel formato richiesto,
+        pronto per essere inviato al frontend come download.
+        """
+        query = apply_query_filters(cls._base_query(), cls.model)
+        items = query.all()
+        records = [
+            {k: v for k, v in item.to_dict().items() if k not in cls.export_exclude_fields}
+            for item in items
+        ]
+        # Se non ci sono righe, mostra comunque le intestazioni delle colonne fisiche del modello
+        columns = None
+        if not records:
+            mapper = inspect(cls.model)
+            columns = [c.key for c in mapper.column_attrs if c.key not in cls.export_exclude_fields]
+        export_filename = filename or cls.model.__tablename__
+        return export_records(records, fmt=fmt, filename=export_filename, columns=columns)
 
     @classmethod
     def get_by_id(cls, entity_id):

@@ -2,9 +2,18 @@ from flask import Blueprint, jsonify, request
 
 from app.services.user_service import UserService
 # from ..services.domain_service import DomainService
+from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/users")
+
+@users_bp.route('/export', methods=['GET'])
+# @requires_auth
+def export_users():
+    try:
+        return UserService.export(fmt=resolve_export_format())
+    except ValueError as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
 
 from flask import jsonify, Response
 from typing import Tuple, Dict, Any

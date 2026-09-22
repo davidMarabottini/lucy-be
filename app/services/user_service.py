@@ -5,6 +5,8 @@ from sqlalchemy.exc import IntegrityError
 
 class UserService(BaseService):
     model = User
+    # Non esportare mai l'hash della password
+    export_exclude_fields = ['password_hash']
 
     # @classmethod
     # def get_all(cls):
