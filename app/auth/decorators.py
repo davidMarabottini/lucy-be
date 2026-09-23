@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import request, jsonify, g
+from flask import request, jsonify, g, make_response
 from ..services.auth_service import AuthService
 from ..models import User
 from sqlalchemy import inspect, or_
@@ -21,7 +21,11 @@ def requires_auth(f):
             
         g.current_user = user
         
-        return f(*args, **kwargs)
+        response = make_response(f(*args, **kwargs))
+        # Sliding expiration: ogni richiesta autenticata rinnova il token, così la sessione
+        # non scade mentre l'utente sta lavorando (scade solo dopo un periodo di inattività).
+        AuthService.set_auth_cookie(response, AuthService.generate_token(user))
+        return response
     return decorated
 
 

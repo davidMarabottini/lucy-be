@@ -6,7 +6,7 @@ from ..auth.decorators import requires_auth
 clients_bp = Blueprint("clients", __name__, url_prefix="/api/clients")
 
 @clients_bp.route("", methods=["GET"])
-# @requires_auth
+@requires_auth
 def list_clients():
     clients = ClientService.get_all()
     return jsonify(clients), 200

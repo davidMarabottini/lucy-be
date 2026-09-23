@@ -5,6 +5,7 @@ PyInstaller.__main__.run([
     '--onedir',
     '--windowed',
     '--name=Lucy',
+    '--icon=app/static/icona.ico',
     '--paths=.',
     '--add-data=app/static;app/static',
     '--add-data=migrations;migrations',
@@ -17,4 +18,5 @@ PyInstaller.__main__.run([
     '--hidden-import=flask_sqlalchemy',
     '--hidden-import=flask_migrate',
     '--hidden-import=flask_cors',
+    
 ])

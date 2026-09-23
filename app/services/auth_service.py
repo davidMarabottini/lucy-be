@@ -7,14 +7,16 @@ from sqlalchemy import or_
 
 class AuthService:
     SECRET_KEY = os.environ["INTERNAL_SECRET_KEY"]
+    TOKEN_LIFETIME = datetime.timedelta(hours=8)
+
     @staticmethod
     def generate_token(user):
-        """Genera un JWT reale con scadenza a 4 ore."""
+        """Genera un JWT con scadenza a TOKEN_LIFETIME."""
         #TODO: sostituire con un token più robusto e sicuro in produzione
         #TODO: UTCNOW è deprecato, sostituire con datetime.now(timezone.utc) in futuro
         payload = {
             'user_id': user.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=8),
+            'exp': datetime.datetime.utcnow() + AuthService.TOKEN_LIFETIME,
             'iat': datetime.datetime.utcnow()
         }
         return jwt.encode(payload, AuthService.SECRET_KEY, algorithm='HS256')
@@ -27,6 +29,18 @@ class AuthService:
             return payload['user_id']
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
             return None
+
+    @staticmethod
+    def set_auth_cookie(response, token):
+        """Imposta il cookie di sessione con gli stessi attributi ovunque venga emesso il token."""
+        response.set_cookie(
+            'authToken', token,
+            httponly=True,
+            secure=False,
+            samesite='Lax',
+            max_age=int(AuthService.TOKEN_LIFETIME.total_seconds())
+        )
+        return response
 
     @staticmethod
     def login_user(username_or_email, password):
@@ -43,10 +57,7 @@ class AuthService:
         if not user or not user.check_password(password):
             return None, "Credenziali non valide"
 
-        token = jwt.encode({
-            'user_id': user.id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-        }, AuthService.SECRET_KEY, algorithm='HS256')
+        token = AuthService.generate_token(user)
 
         user_data = {
             "user": user.username,
@@ -54,13 +65,7 @@ class AuthService:
         }
 
         response = make_response(jsonify(user_data))
-        response.set_cookie(
-            'authToken', token,
-            httponly=True,
-            secure=False,
-            samesite='Lax',
-            max_age=3600
-        )
+        AuthService.set_auth_cookie(response, token)
         return response, None
 
     @staticmethod

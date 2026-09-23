@@ -13,7 +13,7 @@ def get_fernet(password: str) -> Fernet:
         algorithm=hashes.SHA256(),
         length=32,
         salt=_SALT,
-        iterations=100000, # Rende gli attacchi brute-force lentissimi
+        iterations=100000,
     )
     key = urlsafe_b64encode(kdf.derive(password.encode()))
     return Fernet(key)
