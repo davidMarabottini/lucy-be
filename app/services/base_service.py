@@ -35,6 +35,10 @@ class BaseService:
         return query
 
     @classmethod
+    def count(cls) -> int:
+        return cls._base_query().count()
+    
+    @classmethod
     @paginated_response
     def get_all(cls) -> Query:
         return cls._base_query()

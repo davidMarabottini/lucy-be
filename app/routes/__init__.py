@@ -1,6 +1,7 @@
 from .auth_routes import auth_bp
 from .user_routes import users_bp
 from .clients_routes import clients_bp
+from .home_routes import home_bp
 from .employees_routes import employees_bp
 from .employees_contract_routes import employee_contracts_bp
 from .work_activity_routes import activities_bp
@@ -13,6 +14,7 @@ from .work_schedule_type_route import wst_bp
 from .libemax import LIBEMAX_BLUEPRINTS
 
 def register_routes(app):
+    app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(clients_bp)

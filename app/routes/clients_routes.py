@@ -5,6 +5,12 @@ from ..auth.decorators import requires_auth
 
 clients_bp = Blueprint("clients", __name__, url_prefix="/api/clients")
 
+@clients_bp.route("/count", methods=["GET"])
+@requires_auth
+def count_clients():
+    count = ClientService.count()
+    return jsonify({"count": count}), 200
+
 @clients_bp.route("", methods=["GET"])
 @requires_auth
 def list_clients():
