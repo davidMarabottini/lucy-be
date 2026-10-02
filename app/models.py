@@ -97,6 +97,17 @@ class GroupCompany(db.Model):
     # Relazione Many-to-Many
     sectors = db.relationship('Sector', secondary=company_sectors, backref=db.backref('companies', lazy='dynamic'))
     
+
+class Store(db.Model):
+    __tablename__ = 'stores'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('group_companies.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
+
+    company = db.relationship('GroupCompany', backref=db.backref('stores', lazy='dynamic'))
+
 class Contract(db.Model):
     __tablename__ = 'contracts'
     id = db.Column(db.Integer, primary_key=True)
