@@ -9,6 +9,7 @@ from werkzeug.serving import make_server
 
 from core.config import DB_PATH
 from app import create_app
+from app.core.migrations import migrate_encrypted_db
 from core import state
 
 def start_server(status_var_text):
@@ -27,7 +28,10 @@ def start_server(status_var_text):
     try:
         logging.info(f'Avvio inizializzazione Flask..., db_path: {DB_PATH}')
         normalized_db_path = os.path.abspath(DB_PATH).replace("\\", "/")
-        
+
+        # Schema sempre allineato al codice: backup + migration prima di servire.
+        logging.info(migrate_encrypted_db(normalized_db_path, password))
+
         state.active_app = create_app(db_path=normalized_db_path, db_password=password)
         
         state.server_instance = make_server("127.0.0.1", 5000, state.active_app, threaded=True)

@@ -9,6 +9,8 @@ from ..utils.crypto import get_fernet, decrypt_db
 def setup_database():
     try:
         db.create_all()
+        from .migrations import stamp_head_if_available
+        stamp_head_if_available()
         from flask import current_app
         db_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI", "Unknown")
         return f"✅ Database creato con successo!\nURI: {db_uri}"

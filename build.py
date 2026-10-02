@@ -5,7 +5,7 @@ PyInstaller.__main__.run([
     '--onedir',
     '--windowed',
     '--name=Lucy',
-    '--icon=app/static/diamond.ico',
+    # '--icon=app/static/diamond.ico',
     '--paths=.',
     '--add-data=app/static;app/static',
     '--add-data=migrations;migrations',

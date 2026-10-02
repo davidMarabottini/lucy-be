@@ -12,6 +12,7 @@ from .group_company_routes import group_company_bp
 from .contract_routes import contracts_bp
 from .work_schedule_type_route import wst_bp
 from .libemax import LIBEMAX_BLUEPRINTS
+# from .session.cur_company import cur_company_bp
 
 def register_routes(app):
     app.register_blueprint(home_bp)
@@ -27,6 +28,7 @@ def register_routes(app):
     app.register_blueprint(contracts_bp)
     app.register_blueprint(wst_bp)
     app.register_blueprint(week_days_bp)
+    # app.register_blueprint(cur_company_bp)
 
     for bp in LIBEMAX_BLUEPRINTS:
         app.register_blueprint(bp)

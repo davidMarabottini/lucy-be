@@ -6,6 +6,8 @@ from datetime import datetime
 from tkinter import filedialog, messagebox
 import logging
 from app.utils.crypto import decrypt_db, encrypt_db
+from app.core.migrations import generate_revision, migrate_encrypted_db
+from core import state
 
 
 APPDATA_DIR = os.path.join(os.environ.get('APPDATA'), "LucyManager")
@@ -14,8 +16,6 @@ DB_PATH = os.path.join(APPDATA_DIR, "lucy.db")
 
 
 def backup_database():
-  source_db = "lucy.db" 
-
   if not os.path.exists(DB_PATH):
       messagebox.showerror("Errore", f"File database non trovato in:\n{DB_PATH}")
       return
@@ -36,24 +36,6 @@ def backup_database():
       messagebox.showinfo("Successo", "Backup creato correttamente!")
     except Exception as e:
       messagebox.showerror("Errore", f"Errore durante il salvataggio: {e}")
-
-  if os.path.exists(DB_PATH):
-    messagebox.showinfo("Info", "Il database esiste già. Usa 'Avvia Server' per accedere.")
-    return
-
-  password = simpledialog.askstring("Setup Iniziale", "Scegli una password per CRIPTARE il nuovo database:", show='*')
-  
-  if not password:
-      return
-
-  try:
-    temp_app = create_app(db_path=DB_PATH, db_password=password)
-    
-    with temp_app.app_context():
-      result = temp_app.setup_database_func()
-          
-  except Exception as e:
-      messagebox.showerror("Errore Critico", f"Impossibile creare il database: {e}")
 
 def utility_decripta_db():
     """Utility per salvare una copia decriptata del DB"""
@@ -109,50 +91,31 @@ def utility_cripta_db():
         messagebox.showerror("Errore", f"Impossibile criptare il file: {e}")
 
 def generate_migration():
-    """Genera un nuovo file di migration (solo DEV_MODE)"""
-    if not os.path.exists(DB_PATH):
-        messagebox.showwarning("Database Mancante", "Il database non esiste. Inizializzalo prima.")
-        return
-
-    password = simpledialog.askstring("Generate Migration", "Password del database:", show='*')
-    if not password:
-        return
-
+    """Genera una migration dai modelli (solo DEV_MODE). Non usa il DB reale né la password."""
     message = simpledialog.askstring("Generate Migration", "Descrizione della migration:")
     if not message:
         return
 
-    temp_app = None
-    success = False
     try:
-        temp_app = create_app(db_path=DB_PATH, db_password=password)
-
-        with temp_app.app_context():
-            from flask_migrate import migrate as generate # , stamp
-            # stamp()
-            generate(message=message)
-
-        success = True
-        logging.info("Migration Alembic generata con successo.")
+        path = generate_revision(message)
     except Exception as e:
         logging.error(f"Errore durante la generazione migration: {e}")
         messagebox.showerror("Errore", f"Impossibile generare la migration: {e}")
-    finally:
-        if temp_app is not None:
-            if hasattr(temp_app, 'shutdown_func'):
-                try:
-                    temp_app.shutdown_func()
-                    if success:
-                        messagebox.showinfo("Successo", "Migration generata in migrations/versions/")
-                except Exception as e:
-                    logging.error(f"Errore durante lo shutdown/cifratura: {e}")
-                    messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
-            elif success:
-                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
+        return
+
+    if path is None:
+        messagebox.showinfo("Nessuna modifica", "I modelli coincidono con le migration esistenti: niente da generare.")
+    else:
+        logging.info(f"Migration generata: {path}")
+        messagebox.showinfo("Successo", f"Migration generata e verificata:\n{path}\n\nControllala prima di committarla.")
 
 
 def run_migrations():
-    """Applica le migration Alembic pendenti (solo DEV_MODE)"""
+    """Applica le migration pendenti al DB cifrato (backup automatico prima di salvare)."""
+    if state.active_app is not None:
+        messagebox.showwarning("Server attivo", "Ferma il server prima di applicare le migration.")
+        return
+
     if not os.path.exists(DB_PATH):
         messagebox.showwarning("Database Mancante", "Il database non esiste. Inizializzalo prima.")
         return
@@ -161,48 +124,16 @@ def run_migrations():
     if not password:
         return
 
-    temp_app = None
-    success = False
     try:
-        temp_app = create_app(db_path=DB_PATH, db_password=password)
-
-        with temp_app.app_context():
-            from flask_migrate import upgrade, stamp
-            from sqlalchemy import inspect as sa_inspect, text
-            from app.extension import db as app_db
-
-            # Controlla se alembic_version ha un valore valido (non solo se la tabella esiste)
-            is_stamped = False
-            if 'alembic_version' in sa_inspect(app_db.engine).get_table_names():
-                row = app_db.session.execute(text('SELECT version_num FROM alembic_version LIMIT 1')).fetchone()
-                is_stamped = row is not None
-
-            if not is_stamped:
-                # DB senza versione: crea tabelle mancanti e segna come aggiornato
-                app_db.create_all()
-                stamp()
-            else:
-                upgrade()
-
-        success = True
-        logging.info("Migration Alembic applicate con successo.")
-
+        result = migrate_encrypted_db(DB_PATH, password)
     except Exception as e:
         logging.error(f"Errore durante le migration: {e}")
-        messagebox.showerror("Errore", f"Impossibile applicare le migration: {e}")
+        messagebox.showerror("Errore", f"Migration non applicata, il database non è stato modificato:\n{e}")
+        return
 
-    finally:
-        if temp_app is not None:
-            if hasattr(temp_app, 'shutdown_func'):
-                try:
-                    temp_app.shutdown_func()
-                    if success:
-                        messagebox.showinfo("Successo", "Migration applicate e database salvato correttamente!")
-                except Exception as e:
-                    logging.error(f"Errore durante lo shutdown/cifratura: {e}")
-                    messagebox.showerror("Errore Cifratura", f"Errore durante il salvataggio del database cifrato: {e}")
-            elif success:
-                messagebox.showwarning("Attenzione", "Migration applicate, ma il database non è stato ri-cifrato (shutdown_func mancante).")
+    logging.info(result)
+    messagebox.showinfo("Migration", result)
+
 
 def initialize_db():
     if os.path.exists(DB_PATH):

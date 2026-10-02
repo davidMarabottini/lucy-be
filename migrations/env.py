@@ -1,5 +1,4 @@
 import logging
-from logging.config import fileConfig
 
 from flask import current_app
 
@@ -9,9 +8,8 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-fileConfig(config.config_file_name)
+# Niente fileConfig: sostituirebbe gli handler di root e romperebbe il log del Manager.
+logging.getLogger('alembic').setLevel(logging.INFO)
 logger = logging.getLogger('alembic.env')
 
 
@@ -91,8 +89,9 @@ def run_migrations_online():
                 logger.info('No changes in schema detected.')
 
     conf_args = current_app.extensions['migrate'].configure_args
-    if conf_args.get("process_revision_directives") is None:
-        conf_args["process_revision_directives"] = process_revision_directives
+    # Sempre sovrascritto: conf_args è condiviso nel processo e una closure di un env.py
+    # precedente (con altro `config`) disattiverebbe il controllo "nessuna modifica".
+    conf_args["process_revision_directives"] = process_revision_directives
 
     connectable = get_engine()
 

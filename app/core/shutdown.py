@@ -1,37 +1,31 @@
 import os
+import time
 import logging
 import atexit
 
 from ..extension import db
 
-_shutdown_executed = False
-
 
 def create_shutdown_handler(app, fernet, tmp_db_path, abs_db_path):
-    """Crea e registra la funzione di shutdown che cifra il DB temporaneo."""
-    global _shutdown_executed
-    _shutdown_executed = False
+    """Registra shutdown_func (cifra il DB temporaneo) e discard_func (lo elimina senza salvare)."""
+    done = False
+
+    def _release_connections():
+        with app.app_context():
+            db.session.remove()
+            db.engine.dispose()
+        time.sleep(0.5)
 
     def shutdown_and_encrypt():
-        global _shutdown_executed
+        nonlocal done
 
-        if _shutdown_executed or app is None:
-            return
-
-        if fernet is None:
+        if done or app is None or fernet is None:
             return
 
         try:
             logging.info("Avvio procedura di chiusura sicura...")
-
-            with app.app_context():
-                db.session.remove()
-                db.engine.dispose()
-
+            _release_connections()
             logging.info("Connessioni DB chiuse.")
-
-            import time
-            time.sleep(0.5)
 
             if not os.path.exists(tmp_db_path):
                 logging.warning("Shutdown: Il file temporaneo non esiste già più.")
@@ -42,20 +36,40 @@ def create_shutdown_handler(app, fernet, tmp_db_path, abs_db_path):
                 return
 
             with open(tmp_db_path, "rb") as f:
-                data = f.read()
+                encrypted_data = fernet.encrypt(f.read())
 
-            encrypted_data = fernet.encrypt(data)
-            with open(abs_db_path, "wb") as f:
+            # Scrittura atomica: un crash a metà non deve corrompere l'unico DB cifrato.
+            partial_path = abs_db_path + ".partial"
+            with open(partial_path, "wb") as f:
                 f.write(encrypted_data)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(partial_path, abs_db_path)
 
             os.remove(tmp_db_path)
             logging.info("Rimosso file temporaneo.")
-            _shutdown_executed = True
+            done = True
             logging.info("🔒 Database protetto e allineato correttamente.")
 
         except Exception as e:
             logging.error(f"❌ Errore critico durante lo shutdown: {e}")
-            raise e
+            raise
+
+    def discard_temp_db():
+        """Elimina la copia decriptata senza toccare il DB cifrato originale."""
+        nonlocal done
+
+        if done or app is None or fernet is None:
+            return
+
+        try:
+            _release_connections()
+        finally:
+            if os.path.exists(tmp_db_path):
+                os.remove(tmp_db_path)
+            done = True
+            logging.info("Copia temporanea del DB scartata (DB cifrato originale non modificato).")
 
     app.shutdown_func = shutdown_and_encrypt
+    app.discard_func = discard_temp_db
     atexit.register(shutdown_and_encrypt)
