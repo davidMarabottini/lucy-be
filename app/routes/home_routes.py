@@ -6,6 +6,7 @@ from app.services.work_activity_service import WorkActivityService
 from app.services.group_company_service import GroupCompanyService
 from app.services.contract_service import ContractService
 from app.services.sector_service import SectorService
+from app.services.store_service import StoreService
 
 from app.utils.exporters import resolve_export_format
 from ..auth.decorators import requires_auth
@@ -25,5 +26,6 @@ def count_home():
         "SECTORS": SectorService.count(),
         "USERS": EmployeeService.count(),
         "WORK_SCHEDULE_TYPES": WorkScheduleTypeService.count(),
+        "STORES": StoreService.count(),
     }
     return jsonify(counts), 200
